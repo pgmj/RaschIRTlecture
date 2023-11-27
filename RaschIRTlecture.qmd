@@ -1,0 +1,1375 @@
+---
+title: "Item Response Theory and Rasch Measurement Theory"
+subtitle: "An introduction to modern test theory"
+title-block-banner: "#870052"
+title-block-banner-color: "#FFFFFF"
+
+author: 
+  name: Magnus Johansson, PhD
+  affiliation: RISE Research Institutes of Sweden
+  affiliation-url: https://ri.se/shic
+  orcid: 0000-0003-1669-592X
+date: 2023-11-28
+date-format: iso
+
+format: 
+  revealjs:
+    theme: [night, custom.scss]
+    chalkboard: false
+    self-contained: true
+    slide-level: 4
+    slide-number: true
+    scrollable: false
+    center: false
+    logo: RISE_NEG.png
+    multiplex: false
+    reference-location: document
+    code-overflow: wrap
+    code-link: true
+
+execute:
+  echo: false
+  warning: false
+  message: false
+  cache: true
+editor_options: 
+  chunk_output_type: console
+bibliography: references.bib
+---
+
+```{r}
+library(tidyverse)
+library(lavaan)
+library(lavaanPlot)
+library(RISEkbmRasch)
+library(eRm)
+library(patchwork)
+library(mirt)
+library(readxl)
+library(catR)
+
+psychometric_criteria <- data.frame(
+  stringsAsFactors = FALSE,
+  Criterion = c(
+    "Unidimensionality", "Ordered response categories",
+    "Invariance",
+    "Targeting", "Reliability"
+  ),
+  Description = c(
+    "Items represent one latent variable, without strongly correlated item residuals. Principal Component Analysis and Exploratory Factor Analysis of raw data are explorative methods.",
+    "A higher person location (sum score) on the latent variable should entail an increased probability of a higher response (category) for all items and vice versa. Sometimes referred to as 'monotonicity'.",
+    "Item and measure properties are consistent between relevant demographic groups (gender, age, ethnicity, time, etc). Test-retest correlation is not an invariance test since it does not provide information about item properties.",
+    "Item (threshold) locations compared to person locations should be well matched and not show ceiling or floor effects, or large gaps.",
+    "Sufficient reliability for the expected properties of the target population and intended use of results. Reliability is contingent upon the other criteria being fulfilled and should not be reported for scales with inadequate properties."
+  )
+)
+
+```
+
+## Overview {background-color="#009ca6"}
+
+-   Measuring latent constructs
+-   Psychometric criteria
+-   Types of data
+-   Brief comparison of classical test theory and IRT
+-   Overview of IRT models
+-   Examples using the Rasch/1PL model
+    -   if we have time, we'll walk through a full analysis from a recent paper
+
+### Useful links
+
+-   Github repo for this presentation: <https://github.com/pgmj/>
+-   The slides can be followed at: \<\>
+    -   and downloaded here:
+-   My email: [magnus.p.johansson\@ri.se](mailto:magnus.p.johansson@ri.se){.email}
+
+## Latent constructs {background-color="#009ca6"}
+
+We want to measure something that is not directly accessible by using one or more proxy indicators.
+
+-   in psychology - tests and questionnaires
+    -   almost always ordered categorical data
+-   tests of ability/IQ/etc, often consisting of subtests or multiple items
+    -   type of data: correct/incorrect response; response time
+-   questionnaires to measure depression, wellbeing, anxiety, loneliness, etc
+    -   type of data: yes/no, Likert scales, visual analogue scales, etc
+
+### Latent variable {.smaller}
+
+Based on observed indicators (response data collected from participants), the latent variable is assigned a value for each respondent/participant. **The value of the latent variable is the measurement.** The indicators themselves are not measurements, they are indicators of a latent variable.
+
+```{r}
+#| echo: true
+HS.model <- ' visual  =~ x1 + x2 + x3 
+              textual =~ x4 + x5 + x6
+              speed   =~ x7 + x8 + x9 '
+
+fit <- cfa(HS.model, data = HolzingerSwineford1939)
+
+lavaanPlot(model = fit)
+```
+
+### Exercise {background-color="#fdf4dc"}
+
+You will create a brief questionnaire to measure a unidimensional latent variable of your choice.
+
+-   You will be given a few minutes to come up with **three items** that you think measure the latent variable.
+
+::: notes
+ÖVNING kommer in här, där de får ta fram tre enkätitems för att mäta något, utan tydligare instruktioner.
+
+-   första frågan om det de gjort är om de inkluderat svarskategorier
+-   poängtera att svarskategorierna bildar en enhet med frågan, både sett till tolkningsutrymme och som informationsgivande indikator till den latenta variabeln
+-   om de inte gjort svarskategorier, ge dem lite tid att göra detta
+:::
+
+### Types of data {.smaller}
+
+-   Dichotomous data - two categories (yes/no; correct/incorrect)
+-   Polytomous data - more than two ordered categories (Likert etc)
+-   Interval data - i.e response time
+-   Count data - i.e frequency of behavior during a time period
+
+We'll primarily look at the first two types, as they are by far the most used in psychology and psychometrics.
+
+## Psychometric quality assessment? {.smaller .incremental background-color="#009ca6"}
+
+-   There is no substantial agreement on how to assess the psychometric quality of a measure(!).
+-   There are many questionable practices that most agree are wrong (i.e *"sum score and alpha"*), but if you ask two scientists how they determine which measure to use, you will probably get two different answers or one bad answer (*"what everyone else uses"*).
+-   We propose five basic psychometric criteria in a paper available as a preprint [@johansson].
+
+::: footer
+Johansson, M., Preuter, M., Karlsson, S., Möllerberg, M.-L., Svensson, H., & Melin, J. (2023). *Valid and Reliable? Basic and Expanded Recommendations for Psychometric Reporting and Quality Assessment.* OSF Preprints. <https://doi.org/10.31219/osf.io/3htzc>
+:::
+
+### "Sum score and alpha" {.smaller}
+
+-   **This is a huge problem in published research.**
+-   Many papers include "measures" that consist of questionnaires created ad hoc for a study, report Cronbach's alpha, and use a sum score based on putting numbers on response categories.
+-   Most psychological "measures" are actually used only once [@elson2023]
+
+> We need a reasonable psychometric analysis to justify the use of a sum score! And even then the "sum score" is a debatable metric in itself since it is ordinal data, but often gets treated like interval data in statistical models.
+
+### Psychometric criteria (1/5)
+
+We will look at each of these in more detail during this lecture.
+
+```{r}
+psychometric_criteria %>%
+  slice(1) %>% 
+  kable()
+```
+
+### Psychometric criteria (2/5)
+
+```{r}
+psychometric_criteria %>%
+  slice(2) %>% 
+  kable()
+
+```
+
+### Psychometric criteria (3/5)
+
+```{r}
+psychometric_criteria %>%
+  slice(3) %>% 
+  kable()
+```
+
+### Psychometric criteria (4/5)
+
+```{r}
+psychometric_criteria %>%
+  slice(4) %>% 
+  kable()
+```
+
+### Psychometric criteria (5/5)
+
+```{r}
+psychometric_criteria %>%
+  slice(5) %>% 
+  kable()
+```
+
+## Classical vs modern test theory {.smaller background-color="#009ca6"}
+
+> *CTT = factor analysis, principal component analysis, etc*
+>
+> *Modern test theory = IRT, Rasch, Mokken, etc*
+
+Major differences:
+
+-   CTT does not include analysis of item location/difficulty, which is a key aspect of IRT
+-   CTT assumes that reliability is constant across the continuum
+    -   assumes equal reliability for all respondents
+-   CTT has no analysis of monotonicity/ordering of response categories
+-   IRT enables the analysis of items and persons on the same (interval level) scale
+-   IRT enables estimation of latent variable scores on an interval scale
+-   Only Rasch models can justify ordinal sum scores as a sufficient metric to represent measurement on the latent construct scale
+    -   Also... Rasch is a special case, see [@andrich2004; @kyngdon2008].
+
+### Fallacies with either method
+
+No psychometric/statistical method is "safe" from misuse. Some common mistakes to look for in papers:
+
+-   CTT: residual correlations added to model to improve fit
+-   CTT: default estimator ML used (or estimator not reported), when WLS is appropriate (which it almost always is)
+-   CTT and IRT: lack of invariance analysis
+-   IRT: not reporting enough aspects/metrics (i.e only reporting item fit or model fit)
+
+## Intro ramblings over
+
+Let's dive into Item Response Theory and Rasch Measurement Theory!
+
+## Ability testing {.smaller}
+
+-   As a first and simple example, we'll look at data from a test where a participant can either score correct (1) or incorrect (0). We will use the dichotomous Rasch model.
+-   A key assumption of the Rasch model (shared with all IRT models) is that items will have a systematic ordering of **difficulty** that is similar across participants.
+-   This is the structure of the dataset (items = columns):
+
+```{r}
+rasch_data <- raschdat1 %>% 
+  select(I1:I9)
+
+rasch_data %>% 
+  slice(1:5) %>% 
+  kable()
+```
+
+### Guttman pattern {.smaller}
+
+The assumed basic structure of the data is that there is a systematic pattern across items and participants of an increased probability of correct responses as the latent ability increases. The Rasch/IRT 1PL model can be described as a probabilistic Guttman scale [@andrich1985].
+
+```{r}
+#| echo: true
+RIheatmap(rasch_data)
+```
+
+This figure shows items and persons sorted based on the number of correct responses (colored blue). You can see the gradual shift from lower left to upper right that shows the Guttman pattern.
+
+### Item difficulty/location {.smaller}
+
+```{r}
+#| echo: true
+#| fig-width: 6
+rasch <- RM(rasch_data)
+plotICC(rasch, item.subset = 4, ask = FALSE, xlim = c(-5,6))
+abline(h = 0.5, lty = "dashed")
+```
+
+This is a **key figure** in understanding IRT and the concept of item difficulty/location. The point on the x-axis where the line crosses 0.5 is the item difficulty (item location). This is the threshold when the probability of a correct response becomes higher than the probability of an incorrect response. *ICC = item characteristic curve*.
+
+### Item difficulty pt 2 {.smaller}
+
+Nine dichotomous items in the same plot.
+
+```{r}
+#| echo: true
+#| fig-width: 6
+plotjointICC(rasch, xlim = c(-5,5))
+abline(h = 0.5, lty = "dashed")
+```
+
+This figure illustrates how the items are ordered ("item hierarchy") and the locations on the latent variable where they provide the most information - the "item threshold" - which is the location of probability 0.5 for each dichotomous item.
+
+### Targeting {.smaller}
+
+::: columns
+::: {.column width="30%"}
+This is another **key figure**, derived from a "Wright map". The points in the bottom part show the thresholds for each item. The top histogram shows the distribution of the latent variable for the participants (person locations/abilities). The middle section aggregates the item thresholds to help visualize how well the items fit the persons.
+:::
+
+::: {.column width="70%"}
+```{r}
+#| echo: true
+#| fig-height: 7
+RItargeting(rasch_data, dich = TRUE, xlim = c(-4,4))
+```
+:::
+:::
+
+### Targeting pt 2 {.smaller}
+
+::: columns
+::: {.column width="25%"}
+Since items and persons are on the same scale, we can infer a persons item responses from their latent variable score. Let's take a person with score 0 as an example.
+
+**Which items would this person score correctly?**
+:::
+
+::: {.column width="75%"}
+```{r}
+#| fig-height: 7
+dfin <- rasch_data
+xlim <- c(-3,3)
+
+    df.erm <- RM(dfin) # run RM model
+    # get estimates, code borrowed from https://bookdown.org/chua/new_rasch_demo2/PC-model.html
+    person.locations.estimate <- person.parameter(df.erm)
+    item.estimates <- coef(df.erm, "beta")*-1 # item coefficients
+    #item.fit <- eRm::itemfit(person.locations.estimate)
+    
+    item.locations <- as.data.frame(item.estimates)
+    #names(item.locations) <- paste0("T", c(1:ncol(item.locations))) #re-number items
+    itemloc.long <- item.locations %>%
+      rownames_to_column() %>%
+      separate(rowname, c(NA, "names"), sep = " ")
+    
+    ### create df for ggplot histograms
+    # person locations
+    thetas<-as.data.frame(person.locations.estimate$theta.table)
+    pthetas<-thetas$`Person Parameter`
+    # item locations
+    thresholds<-itemloc.long$item.estimates
+    ### items and persons in the same variable
+    #create data frame with 0 rows and 3 columns
+    df.locations <- data.frame(matrix(ncol = 2, nrow = 0))
+    #provide column names
+    colnames(df.locations) <- c('type', 'locations')
+    # change type of data
+    df.locations$type<-as.character(df.locations$type)
+    df.locations$locations<-as.numeric(df.locations$locations)
+    # insert labels in accurate amounts (N+items)
+    nper<-nrow(dfin)
+    nperp<-nper+1
+    nthr<-length(thresholds)+nper
+    df.locations[1:nper,1]<-paste0("Persons")
+    df.locations[nperp:nthr,1]<-paste0("Item thresholds")
+    # insert data from vectors with thetas and thresholds
+    df.locations$locations<-c(pthetas,thresholds)
+    # change type to class factor
+    df.locations$type<-as.factor(df.locations$type)
+    
+    # get mean/SD for item/person locations
+    pi.locations <- data.frame(matrix(ncol = 3, nrow = 3))
+    item_difficulty <- as.data.frame(item.estimates) %>%
+      rownames_to_column() %>%
+      dplyr::rename(Item = 'rowname', Location = 'item.estimates')
+    
+    #
+    item.mean <- round(mean(item_difficulty$Location),2)
+    item.sd <- round(sd(item_difficulty$Location),2)
+    person.mean <- round(mean(pthetas),2)
+    person.sd <- round(sd(pthetas),2)
+    #provide column names
+    colnames(pi.locations) <- c('','Mean', 'SD')
+    pi.locations[1,1] <- "Items"
+    pi.locations[1,2] <- round(mean(item_difficulty$Location),2)
+    pi.locations[1,3] <- round(sd(item_difficulty$Location),2)
+    pi.locations[2,1] <- "Persons"
+    pi.locations[2,2] <- round(mean(pthetas),2)
+    pi.locations[2,3] <- round(sd(pthetas),2)
+    
+    # make plot with each items thresholds shown as dots
+    p3 <- ggplot(itemloc.long, aes(x = names, y = item.estimates, label = names, color = names)) +
+      geom_point() +
+      geom_text(hjust = 1.15, vjust = 1.2, size = 5.5) +
+      scale_y_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
+      theme_bw() +
+      theme(legend.position = 'none') +
+      coord_flip() +
+      labs(y = "Location (logit scale)",
+           x = "Items",
+           caption = paste0("Person location average: ", pi.locations[2,2], " (SD ", pi.locations[2,3],"), Item location average: ",
+                            pi.locations[1,2], " (SD ", pi.locations[1,3], "). Sample size: ",nrow(dfin),"."
+           )) +
+      theme(plot.caption = element_text(hjust = 0, face = "italic"))
+    
+    # Item Threshold location histogram
+    p2 <- ggplot() +
+      geom_histogram(data=subset(df.locations, type=="Item thresholds"),
+                     aes(locations, y= after_stat(count))) +
+      labs(x = "",
+           y = "Items aggregated") +
+      scale_x_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
+      scale_y_reverse() +
+      geom_vline(xintercept = item.mean, color = "#e83c63", linetype = 2) +
+      annotate("rect", ymin = 0, ymax = Inf, xmin = (item.mean-item.sd), xmax = (item.mean+item.sd), alpha = .2) +
+      geom_text(hjust = 1.1, vjust = 1) +
+      theme_bw() +
+      theme(legend.position = 'none')
+    
+    # Person location histogram
+    p1 <- ggplot() +
+      geom_histogram(data=subset(df.locations, type=="Persons"),
+                     aes(locations, fill="Persons", y= after_stat(count))) +
+      xlab('') +
+      ylab('Persons') +
+      scale_x_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
+      geom_vline(xintercept = person.mean, color = "#0e4e65", linetype = 2) +
+      annotate("rect", ymin = 0, ymax = Inf, xmin = (person.mean-person.sd), xmax = (person.mean+person.sd), alpha = .2) +
+      geom_text(hjust = 1.1, vjust = 1) +
+      theme_bw() +
+      theme(legend.position = 'none',
+            text=element_text(family = "sans"))
+    
+    
+    # combine plots together to create Wright map, and let the individual item threshold plot have some more space
+    #plot_grid(p2,p3,p1, labels=NULL, nrow = 3, align ="hv", rel_heights = c(1,1,1.4))
+    # put all three plots together with patchwork
+    p1 / p2 / p3 + plot_layout(heights = c(1, 1, 1.4))
+  
+```
+:::
+:::
+
+## Summing up so far {.smaller background-color="#009ca6"}
+
+We have looked at the Rasch model for dichotomous data, also sometimes (not quite correctly) referred to as the IRT 1PL model. The key parameter is the item location/difficulty. 1PL stands for "one parameter logistic" model, and the parameter is the item location.
+
+I generally use the term "location" for both items and persons as it is more generic. But for didactic purposes, when speaking of ability tests, it is probably easier to think about the specific term "difficulty" for items and how it related to the persons latent "ability".
+
+In IRT terminology, "person location" is frequently referred to as "theta", often using this symbol: $\theta$
+
+### A note on scaling {.smaller}
+
+IRT/Rasch uses the logit scale, which is an interval scale, for both items and persons. This means that the distance between two points on the scale is the same, regardless of where on the scale you are.
+
+However, the values on the logit scale have no inherent meaning or external reference point. **This is why we need to look at the item difficulty and person ability in relation to each other.** Do not conflate the zero point on the logit scale with something like 0 on a Z-score scale.
+
+### Exercise pt 2 {background-color="#fdf4dc"}
+
+Let's return to the items you created before.
+
+::: incremental
+-   How would you describe the location of the items in terms of hierarchy amongst them?
+    -   Did you think about the items in terms of difficulty when you created them?
+-   How would you expect a normal population to perform on these items, in terms of the distribution of their ability relative to the item locations?
+:::
+
+### Other IRT models {.smaller}
+
+The 2PL and 3PL models are also commonly used. The 2PL model adds a second parameter, the item discrimination, which is a measure of how well the item separates between persons with high and low ability.
+
+```{r}
+#| echo: true
+#| layout-ncol: 2
+mirt(rasch_data, 1, itemtype = "Rasch", verbose = FALSE) %>%  plot(type="trace", facet_items = FALSE)
+mirt(rasch_data, 1, itemtype = "2PL", verbose = FALSE) %>%   plot(type="trace", facet_items = FALSE)
+```
+
+::: notes
+The Rasch model assumes that the discrimination parameter is 1 for all items, which means that the slopes of the ICCs are the same for all items. The 2PL model allows the discrimination parameter to vary between items, which means that the slopes of the ICCs can vary between items. Note: the 1PL model also assumes that the discrimination parameter is the same across items, but it does not have to be fixed at 1.
+:::
+
+### 3PL model {.smaller}
+
+The 3PL model adds a third parameter, which makes the ICC figure look like this for example.
+
+```{r}
+#| echo: true
+mirt(rasch_data, 1, itemtype = "3PL", verbose = FALSE) %>%   plot(type="trace", facet_items = FALSE)
+```
+
+Can you guess what the third parameter is?
+
+::: notes
+the guessing parameter, which is a measure of how likely it is that a person with low ability will answer the item correctly.
+:::
+
+### Similarities of CTT and IRT
+
+-   Item threshold locations are similar to item intercepts in CTT
+-   Item discrimination is similar to factor loadings in CTT
+
+## Polytomous models {background-color="#009ca6"}
+
+Now let's move on to questionnaire type of data with ordered response categories.
+
+We'll focus on the Rasch model, in part since it is complicated enough for this short lecture. But also since it is the only model that allows the ordinal sum score to be used as a sufficient statistic for the latent variable.
+
+### ICC for polytomous models {.smaller}
+
+This is the same type of figure as before, and it now shows probabilities for all response categories for one item. **How do you interpret it?**
+
+```{r}
+pss14 <- read_excel("data/Swedish_PSS_Rasch_analysis.xlsx") %>% 
+  janitor::clean_names()
+itemlabels <- read_excel("data/PSS14itemlabels.xls")
+dif_age <- pss14$age
+dif_gender <- pss14$gender
+pss14$age <- NULL
+pss14$gender <- NULL
+names(pss14) <- itemlabels$itemnr
+pss7 <- pss14 %>% 
+  select(ends_with("n"))
+```
+
+```{r}
+#| fig-width: 7
+RIitemCats(pss7, items = "q12n", xlims = c(-5,3))
+```
+
+### ICC with labels
+
+```{r}
+# Based on eRm package functions, see
+# https://github.com/cran/eRm/blob/master/R/plist.internal.R
+# https://github.com/cran/eRm/blob/master/R/plotICC.Rm.R
+
+xlim <- c(-5,3)
+object <- PCM(pss7)
+
+theta  <- seq(xlim[1], xlim[2], length.out = 201L)   # x-axis
+
+plist.internal <- function(object, theta){
+
+  X <- object$X
+  mt_vek <- apply(X, 2L, max, na.rm = TRUE)   # number of categories - 1 for each item
+  mt_ind <- rep(seq_along(mt_vek), mt_vek)
+
+  #--------compute list matrix of probabilites for fixed theta)
+  p.list <- tapply(object$betapar, mt_ind, function(beta.i){
+    beta.i <- c(0, beta.i)
+    ind.h <- 0:(length(beta.i)-1)
+    theta.h <- tcrossprod(ind.h, theta) # ind.h %*% t(theta) # multiply category with
+    tb <- exp(theta.h + beta.i)
+    denom <- colSums(tb)
+    pi.mat <- apply(tb, 1L, function(y){ y/denom })
+    return(pi.mat)
+  })
+  return(p.list)
+}
+
+p.list <- plist.internal(object, theta) # matrix of probabilities
+th.ord <- order(theta)
+
+textlab <- colnames(object$X)
+ivec <- seq_along(p.list)
+
+yp <- as.matrix(p.list[[6]]) # choose which item to plot
+yy <- yp[th.ord,]
+
+x = sort(theta) # vector for x axis
+y = yp[th.ord,] # matrix with one vector per response category
+ylim = c(0,1)
+
+df.icc <- data.frame(matrix(ncol = 0, nrow = 201))
+df.icc <- rbind(df.icc,as.data.frame(y))
+df.icc$x <- sort(theta)
+
+
+categories <- c("Never","Seldom","Sometimes","Often","Always")
+
+df.icc <- df.icc %>%
+  pivot_longer(!x) %>%
+  dplyr::rename(Category = name,
+         Probability = value)
+
+getXY <- function(categoryN){
+  df.icc %>%
+    filter(Category == "V1") %>%
+    filter(Probability == mProb[1]) %>%
+    pull(x)
+}
+
+fontsize <- 15
+
+q12nICC <- ggplot(df.icc,
+       aes(x = x, y = Probability, color = Category, group = Category)) +
+  geom_line(linewidth = 0.9) +
+  scale_x_continuous('Location (logit scale)', breaks = c(-5:3)) +
+  scale_y_continuous('Probability', breaks = seq(0,1,0.2)) +
+  theme_minimal(base_size = fontsize) +
+  theme_rise(axissize = fontsize) +
+  theme(axis.text = element_text(size = fontsize-1),
+        legend.text = element_text(size = fontsize-1),
+        legend.title = element_text(size = fontsize)) +
+  coord_cartesian(ylim = c(0,1), clip = "off")
+q12nICC + scale_color_viridis_d(option = "D", labels = categories, end = 0.97)
+```
+
+### Item category Thresholds
+
+```{r}
+#| eval: false
+# this is to export the item parameters for PSS7 for later use
+RIitemparams(pss7,"PSS7itemparams.csv")
+```
+
+```{r}
+pss7params <- read_csv("PSS7itemparams.csv") %>% 
+  as.data.frame()
+q12n_locs <- pss7params %>% 
+  slice(6) %>% t() %>% as.data.frame() %>% pull(V1)
+q12nICC + scale_color_viridis_d(option = "D", labels = categories, end = 0.97) +
+  geom_vline(xintercept = q12n_locs[1], linetype = "dashed") +
+  geom_vline(xintercept = q12n_locs[2], linetype = "dashed") +
+  geom_vline(xintercept = q12n_locs[3], linetype = "dashed") +
+  geom_vline(xintercept = q12n_locs[4], linetype = "dashed")
+```
+
+### Guesstimating theta {.smaller}
+
+Recall $\theta$ ? Let's say a person responds "Often" to this item, in which range is it most likely that their theta is?
+
+```{r}
+q12nICC + scale_color_viridis_d(option = "D", labels = categories, end = 0.97) +
+  geom_vline(xintercept = q12n_locs[1], linetype = "dashed") +
+  geom_vline(xintercept = q12n_locs[2], linetype = "dashed") +
+  geom_vline(xintercept = q12n_locs[3], linetype = "dashed") +
+  geom_vline(xintercept = q12n_locs[4], linetype = "dashed")
+```
+
+### Guesstimating theta {.smaller}
+
+This is an item from the Perceived Stress Scale (PSS).
+
+```{r}
+q12nICC + scale_color_viridis_d(option = "D", labels = categories, end = 0.97) +
+  geom_vline(xintercept = q12n_locs[3], linetype = "dashed") +
+  geom_vline(xintercept = q12n_locs[4], linetype = "dashed") +
+  annotate("rect", xmin = q12n_locs[3], xmax = q12n_locs[4], ymin = -0.05, ymax = 1,
+           alpha = .3,fill = "lightblue") +
+  labs(title = "'During the last month, have you...",
+  subtitle = "found yourself thinking about things that you have to accomplish?'") +
+  geom_text(x = 0.23, y = 0.9, label = "Often", size = 6, color = "black") +
+  update_geom_defaults("text", list(family = "Lato"))
+```
+
+### Estimating theta {.smaller}
+
+```{r}
+items <- as.matrix(pss7params)
+data <- pss7
+
+theta1 <- thetaEst(x = c(NA,NA,NA,NA,NA,3,NA), model = "PCM", method = "WL", it = items)
+sem1 <- semTheta(thEst = theta1, x = c(NA,NA,NA,NA,NA,3,NA), model = "PCM", method = "WL", it = items)
+
+q12n_r4 <- q12nICC + scale_color_viridis_d(option = "D", labels = categories, end = 0.97) +
+  geom_vline(xintercept = q12n_locs[3], linetype = "dashed") +
+  geom_vline(xintercept = q12n_locs[4], linetype = "dashed") +
+  annotate("rect", xmin = q12n_locs[3], xmax = q12n_locs[4], ymin = -0.05, ymax = 1,
+           alpha = .3,fill = "lightblue") +
+  geom_point(x = theta1, y = 0.5, size = 5, color = "black", shape = 18) +
+  geom_segment(aes(x = theta1-sem1, xend = theta1+sem1, y = 0.5, yend = 0.5), color = "black")
+
+q12n_r4 +   labs(title = "'During the last month, have you...",
+  subtitle = "found yourself thinking about things that you have to accomplish?'",
+  caption = "Note. Estimated theta shown with black diamond shape, and standard error of measurement with a black horizontal line.")
+```
+
+::: notes
+This is the estimated theta based on the item threshold location parameters, using Warm's (1989) WL estimator. The standard error is also shown.
+:::
+
+### In context {.smaller}
+
+Is this person's theta a high or low value? How does it relate to the overall population?
+
+::: fragment
+```{r}
+dfin <- pss7
+xlim <- c(-5,3)
+# code below is from RISEkbmRasch::RItargeting()
+df.erm <- PCM(dfin) # run PCM model
+# get estimates, code borrowed from https://bookdown.org/chua/new_rasch_demo2/PC-model.html
+item.estimates <- eRm::thresholds(df.erm)
+item_difficulty <- item.estimates[["threshtable"]][["1"]]
+item_difficulty <- as.data.frame(item_difficulty)
+item.se <- item.estimates$se.thresh
+person.locations.estimate <- person.parameter(df.erm)
+item.fit <- eRm::itemfit(person.locations.estimate)
+
+item.locations <- item_difficulty[, 2:ncol(item_difficulty)]
+names(item.locations) <- paste0("T", c(1:ncol(item.locations))) # re-number items
+itemloc.long <- item.locations %>%
+  rownames_to_column() %>%
+  dplyr::rename(names = "rowname") %>%
+  mutate(names = factor(names, levels = rev(names(dfin)))) %>%
+  pivot_longer(
+    cols = starts_with("T"),
+    names_to = "thresholds",
+    values_to = "par_values"
+  )
+### create df for ggplot histograms
+# person locations
+thetas <- as.data.frame(person.locations.estimate$theta.table)
+pthetas <- thetas$`Person Parameter`
+# item locations
+thresholds <- c()
+for (i in 2:ncol(item_difficulty)) {
+  thresholds <- c(thresholds, item_difficulty[, i])
+}
+### items and persons in the same variable
+#create data frame with 0 rows and 3 columns
+df.locations <- data.frame(matrix(ncol = 2, nrow = 0))
+# provide column names
+colnames(df.locations) <- c("type", "locations")
+# change type of data
+df.locations$type <- as.character(df.locations$type)
+df.locations$locations <- as.numeric(df.locations$locations)
+# insert labels in accurate amounts (N+items)
+nper <- nrow(dfin)
+nperp <- nper + 1
+nthr <- length(thresholds) + nper
+df.locations[1:nper, 1] <- paste0("Persons")
+df.locations[nperp:nthr, 1] <- paste0("Item thresholds")
+# insert data from vectors with thetas and thresholds
+df.locations$locations <- c(pthetas, thresholds)
+# change type to class factor
+df.locations$type <- as.factor(df.locations$type)
+
+# get mean/SD for item/person locations
+pi.locations <- data.frame(matrix(ncol = 3, nrow = 3))
+
+item.mean <- round(mean(item_difficulty$Location), 2)
+item.sd <- round(sd(item_difficulty$Location), 2)
+item.thresh.sd <- item_difficulty %>%
+  dplyr::select(starts_with("Threshold")) %>%
+  pivot_longer(everything()) %>%
+  pull() %>%
+  na.omit() %>%
+  sd() %>%
+  round(2)
+person.mean <- round(mean(pthetas), 2)
+person.sd <- round(sd(pthetas), 2)
+#provide column names
+colnames(pi.locations) <- c('','Mean', 'SD')
+pi.locations[1,1] <- "Items"
+pi.locations[1,2] <- round(mean(item_difficulty$Location),2)
+pi.locations[1,3] <- round(sd(item_difficulty$Location),2)
+pi.locations[2,1] <- "Item thresholds"
+pi.locations[2,2] <- round(mean(item_difficulty$Location),2)
+pi.locations[2,3] <- item.thresh.sd
+pi.locations[3,1] <- "Persons"
+pi.locations[3,2] <- round(mean(pthetas),2)
+pi.locations[3,3] <- round(sd(pthetas),2)
+
+# Person location histogram (top plot)
+p1 <- ggplot() +
+  geom_histogram(
+    data = subset(df.locations, type == "Persons"),
+    aes(locations, fill = "Persons", y = after_stat(count))
+  ) +
+  xlab("") +
+  ylab("Persons") +
+  scale_x_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
+  geom_vline(xintercept = person.mean, color = "#0e4e65", linetype = 2) +
+  annotate("rect", ymin = 0, ymax = Inf, xmin = (person.mean - person.sd), xmax = (person.mean + person.sd), alpha = .2) +
+  geom_text(hjust = 1.1, vjust = 1) +
+  theme_bw() +
+  theme(
+    legend.position = "none",
+    text = element_text(family = "sans")
+  )
+
+# Item Threshold location histogram (middle plot)
+p2 <- ggplot() +
+  geom_histogram(
+    data = subset(df.locations, type == "Item thresholds"),
+    aes(locations, y = after_stat(count))
+  ) +
+  xlab("") +
+  ylab("Thresholds") +
+  scale_x_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
+  scale_y_reverse() +
+  geom_vline(xintercept = item.mean, color = "#e83c63", linetype = 2) +
+  annotate("rect", ymin = 0, ymax = Inf, xmin = (item.mean - item.thresh.sd), xmax = (item.mean + item.thresh.sd), alpha = .2) +
+  geom_text(hjust = 1.1, vjust = 1) +
+  theme_bw() +
+  theme(legend.position = "none")
+
+# make plot with each items thresholds shown as dots (bottom plot)
+p3 <- ggplot(itemloc.long, aes(x = names, y = par_values, label = thresholds, color = names)) +
+  geom_point() +
+  geom_text(hjust = 1.1, vjust = 1) +
+  scale_y_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  coord_flip() +
+  labs(y = "Location (logit scale)",
+       x = "Items",
+       caption = paste0(
+         "Person location average: ", pi.locations[3, 2], " (SD ", pi.locations[3, 3], "), Item threshold location average: ",
+         pi.locations[2, 2], " (SD ", pi.locations[2, 3], "). Sample size: ",nrow(dfin),"."
+       )) +
+  theme(plot.caption = element_text(hjust = 0, face = "italic"))
+
+p1_r4 <- p1 +  
+  geom_point(aes(x = theta1, y = 25), size = 5, color = "black", shape = 18) +
+  geom_segment(aes(x = theta1-sem1, xend = theta1+sem1, y = 25, yend = 25), color = "black")
+
+q12n_r4mod <- q12n_r4 + theme(legend.position = "none") +
+  labs(caption = paste0(
+         "Person location average: ", pi.locations[3, 2], " (SD ", pi.locations[3, 3], "), Item threshold location average: ",pi.locations[2, 2], " (SD ", pi.locations[2, 3], "). Sample size: ",nrow(dfin),"."
+       ))
+  
+# combine plots
+p1_r4 / q12n_r4 # + plot_layout(heights = c(1, 1, 1.4))
+```
+:::
+
+### ICC → targeting figure
+
+```{r}
+p3_r4 <- 
+  itemloc.long %>% 
+  filter(names == "q12n") %>%
+  ggplot(aes(x = names, y = par_values, label = thresholds, color = names)) +
+  geom_point() +
+  geom_text(hjust = 1.1, vjust = 1) +
+  scale_y_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  coord_flip() +
+  labs(y = "",
+       x = "Items"
+       ) +
+  theme(plot.caption = element_text(hjust = 0, face = "italic")) +
+  annotate("rect", ymin = q12n_locs[3], ymax = q12n_locs[4], xmin = 0.4, xmax = 1.6,
+           alpha = .3, fill = "lightblue", color = "black")
+  
+p1_r4 / p3_r4 / q12n_r4 + plot_layout(heights = c(1.3, 0.4, 1.3))
+```
+
+### Adding another item {.smaller}
+
+q8n: "found that you could not cope with all the things that you had to do?" - "Sometimes"
+
+```{r}
+q8n_locs <- pss7params %>% 
+  slice(4) %>% t() %>% as.data.frame() %>% pull(V1)
+
+p3_12_8 <- 
+  itemloc.long %>% 
+  filter(names %in% c("q8n","q12n")) %>%
+  ggplot(aes(x = names, y = par_values, label = thresholds, color = names)) +
+  geom_point() +
+  geom_text(hjust = 1.1, vjust = 1) +
+  scale_y_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  coord_flip() +
+  labs(y = "",
+       x = "Items"
+       ) +
+  theme(plot.caption = element_text(hjust = 0, face = "italic")) +
+  annotate("rect", ymin = q8n_locs[2], ymax = q12n_locs[4], xmin = 0.4, xmax = 2.6,
+           alpha = .3, fill = "lightblue")
+
+theta2 <- thetaEst(x = c(NA,NA,NA,2,NA,3,NA), model = "PCM", method = "WL", it = items)
+sem2 <- semTheta(thEst = theta1, x = c(NA,NA,NA,2,NA,3,NA), model = "PCM", method = "WL", it = items)
+
+p1_r8_12 <- p1 +  
+  geom_point(aes(x = theta2, y = 25), size = 5, color = "black", shape = 18) +
+  geom_segment(aes(x = theta2-sem2, xend = theta2+sem2, y = 25, yend = 25), color = "black")+  
+  geom_point(aes(x = theta1, y = 50), size = 5, color = "darkgrey", shape = 18) +
+  geom_segment(aes(x = theta1-sem1, xend = theta1+sem1, y = 50, yend = 50), color = "darkgrey") +
+  geom_text(aes(x = theta1, y = 50, label = "theta for q12n only"), hjust = 1.1, vjust = 1.2) +
+  geom_text(aes(x = theta2, y = 25, label = "+ q8n"), hjust = 1.1, vjust = 1.2)
+
+p1_r8_12 / p3_12_8  #+ plot_layout(heights = c(1, 1,1))
+```
+
+### One more item... {.smaller}
+
+q2n: "felt that you were unable to control important things in your life?" - "Seldom"
+
+```{r}
+q2n_locs <- pss7params %>% 
+  slice(2) %>% t() %>% as.data.frame() %>% pull(V1)
+
+p3_12_8_2 <- 
+  itemloc.long %>% 
+  filter(names %in% c("q2n","q8n","q12n")) %>%
+  ggplot(aes(x = names, y = par_values, label = thresholds, color = names)) +
+  geom_point() +
+  geom_text(hjust = 1.1, vjust = 1) +
+  scale_y_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  coord_flip() +
+  labs(y = "",
+       x = "Items"
+       ) +
+  theme(plot.caption = element_text(hjust = 0, face = "italic")) +
+  annotate("rect", ymin = q8n_locs[2], ymax = q2n_locs[2], xmin = 0.4, xmax = 3.6,
+           alpha = .3, fill = "lightblue")
+
+theta3 <- thetaEst(x = c(NA,1,NA,2,NA,3,NA), model = "PCM", method = "WL", it = items)
+sem3 <- semTheta(thEst = theta1, x = c(NA,1,NA,2,NA,3,NA), model = "PCM", method = "WL", it = items)
+
+p1_8_12_2 <- p1 +
+  geom_point(aes(x = theta3, y = 25), size = 5, color = "black", shape = 18) +
+  geom_segment(aes(x = theta3-sem3, xend = theta3+sem3, y = 25, yend = 25), color = "black") + 
+  geom_point(aes(x = theta2, y = 50), size = 5, color = "darkgrey", shape = 18) +
+  geom_segment(aes(x = theta2-sem2, xend = theta2+sem2, y = 50, yend = 50), color = "darkgrey") +  
+  geom_point(aes(x = theta1, y = 85), size = 5, color = "grey", shape = 18) +
+  geom_segment(aes(x = theta1-sem1, xend = theta1+sem1, y = 85, yend = 85), color = "grey") +
+  geom_text(aes(x = theta1, y = 85, label = "theta for q12n only"), hjust = 1.1, vjust = 1.2) +
+  geom_text(aes(x = theta2, y = 50, label = "+ q8n"), hjust = 1.1, vjust = 1.2) +
+  geom_text(aes(x = theta3, y = 25, label = "+ q2n"), hjust = 1.1, vjust = 1.2)
+
+p1_8_12_2 / p3_12_8_2 + plot_layout(heights = c(1, 0.6))
+```
+
+See how that error bar gets smaller and smaller as we add more items? That's because we're getting more and more information about the respondents theta with each item.
+
+### PSS-7 targeting {.smaller}
+
+Here are all 7 items from the PSS negative items [@rozental2023]. **Discuss 2 & 2 how you interpret this figure.**
+
+```{r}
+#| echo: true
+RItargeting(pss7, xlim = c(-4,4))
+```
+
+### PSS-7 item hierarchy {.smaller}
+
+```{r}
+# this will be available in an updated RISEkbmRasch package soon
+RIitemHierarchy2 <- function(dfin, ci = "95"){
+  df.erm <- PCM(dfin)
+  item.estimates <- eRm::thresholds(df.erm)
+  item_difficulty <- item.estimates[["threshtable"]][["1"]]
+  item_difficulty<-as.data.frame(item_difficulty)
+
+  item.locations<-item_difficulty[,2:ncol(item_difficulty)]
+  names(item.locations) <- paste0("T", c(1:ncol(item.locations))) #re-number items
+
+  itemloc.long <- item.locations %>%
+    rownames_to_column() %>%
+    dplyr::rename(names = "rowname") %>%
+    pivot_longer(
+      cols = starts_with("T"),
+      names_to = "thresholds",
+      values_to = "par_values"
+    ) %>%
+    dplyr::rename(itemnr = names,
+                  Threshold = thresholds,
+                  Locations = par_values
+    )
+  # get SEM estimates for each threshold
+  itemSE <- as.data.frame(item.estimates[["se.thresh"]]) %>%
+    rownames_to_column(var = 'itemThresh') %>%
+    dplyr::rename(ThreshSEM = 'item.estimates[["se.thresh"]]')
+  # long format dataframe with separate variables for item and threshold
+
+  # vector of threshold names as "T1" etc
+  Tthresh <- paste0("T",c(1:100))
+  # vector with threshold names as "c1" etc (since eRm outputs these)
+  names(Tthresh) <- paste0("c",c(1:100))
+  # create df and recode c1 to T1, etc
+  itemSE <- itemSE %>%
+    separate(itemThresh, c(NA,"itemThresh"), sep = "beta ") %>%
+    separate(itemThresh, c("itemnr","threshnr"), sep = "\\.") %>%
+    mutate(Threshold = dplyr::recode(threshnr, !!!Tthresh)) %>%
+    dplyr::select(!threshnr)
+
+  # join all dataframes together
+  itemLocs <- item_difficulty %>%
+    rownames_to_column(var = "itemnr") %>%
+    dplyr::select(!any_of(starts_with("Thresh"))) %>%
+    left_join(itemloc.long, ., by = "itemnr") %>%
+    left_join(., itemlabels, by = "itemnr") %>%
+    dplyr::rename(itemDescr = item) %>%
+    left_join(., itemSE, by = c("itemnr","Threshold"))
+
+  # get order of items
+  itemOrder <- itemLocs %>%
+    arrange(Location) %>%
+    distinct(itemnr) %>%
+    pull()
+
+  # and itemlabels in the same order
+  itemLabels <- itemLocs %>%
+    arrange(Location) %>%
+    distinct(itemDescr) %>%
+    pull()
+
+  # use the ordering and create plot
+
+  if(ci == "none"){
+    itemLocs %>%
+      mutate(Item = factor(itemnr, levels = itemOrder)) %>%
+      ggplot(aes(x = Item, color = Threshold)) +
+      geom_point(aes(y = Locations)) +
+      geom_text(aes(y = Locations, label = Threshold), hjust = 1, vjust = 1.3) +
+      geom_point(aes(y = Location),
+                 size = 4,
+                 shape = 18,
+                 color = "black") +
+      theme(legend.position = "none") +
+      scale_x_discrete(labels = str_wrap(paste0(itemOrder, " - ", itemLabels), width = 36)) +
+      coord_flip() +
+      labs(caption = str_wrap("Note. Item locations are indicated by black diamond shapes. Item threshold locations are indicated by colored dots.")) +
+      theme(plot.caption = element_text(hjust = 0, face = "italic")) +
+      scale_color_brewer(palette = "Dark2")
+
+  }
+  else {
+    itemLocs %>%
+      mutate(Item = factor(itemnr, levels = itemOrder)) %>%
+      ggplot(aes(x = Item, color = Threshold)) +
+      geom_point(aes(y = Location),
+                 size = 4,
+                 shape = 18,
+                 color = "black"
+      ) +
+      geom_point(aes(y = Locations),
+                 position = position_nudge()) +
+      geom_text(aes(y = Location, label = round(Location,2)),
+                hjust = 0.5, vjust = 2, color = "black", size = 3,
+                show.legend = FALSE) +
+      geom_text(aes(y = Location, label = round(Location-mean(Location),2)),
+                hjust = 0.5, vjust = -1.3, color = "darkgrey", size = 3,
+                show.legend = FALSE) +
+      geom_errorbar(aes(ymin = Locations - 1.96*ThreshSEM, ymax = Locations + 1.96*ThreshSEM),
+                    width = 0.11
+      ) +
+      geom_text(aes(y = Locations, label = Threshold), hjust = 0.5, vjust = 1.4,
+                show.legend = FALSE) +
+      geom_text(aes(y = Locations, label = round(Locations,2)), hjust = 0.5, vjust = -1.1, size = 3,
+                show.legend = FALSE) +
+      geom_hline(aes(yintercept = mean(Location)),
+                 linetype = "dashed",
+                 color = "darkgrey") +
+      geom_rug(aes(y = Locations), color = "darkgrey", sides = "l", length = unit(0.02, "npc")) +
+      scale_x_discrete(labels = str_wrap(paste0(itemOrder, " - ", itemLabels), width = 36)) +
+      scale_y_continuous(breaks = scales::extended_breaks()) +
+      coord_flip() +
+      labs(caption = glue("Note. Item locations are indicated by black diamond shapes and black text.
+            Grey text indicates the deviation of the item location from the mean item location ({round(mean(itemLocs$Location),2)}).
+            Item threshold locations are indicated by colored dots and colored text.
+            Horizontal error bars indicate 95% confidence intervals around threshold locations.")) +
+      scale_color_brewer(palette = "Dark2", guide = "none") +
+      theme(plot.caption = element_text(hjust = 0, face = "italic"),
+            legend.position = "none")
+  }
+}
+```
+
+**Why is this figure of interest?**
+
+```{r}
+#| echo: true
+RIitemHierarchy2(pss7) + theme_rise()
+```
+
+::: notes
+Especially when creating a measure, researchers should have hypotheses about the order of items. This figure can be used to check these hypothesis with data.
+:::
+
+### Reliability {.smaller}
+
+**Test information** - reflects item properties, not sample/person properties.
+
+-   The same goes for test-retest as a reliability test, it should be used to assess stability in item properties, not sample properties.
+
+```{r}
+#| echo: true
+#| fig-width: 6
+RItif(pss7) + theme_rise()
+```
+
+## Summing up polytomous models {.smaller}
+
+We have been using the Partial Credit Model with Conditional Maximum Likelihood estimation, using the `eRm` package for R.
+
+When analyzing polytomous data with Rasch/IRT models, the lowest response category is always set to 0, as it reflects on the number of thresholds "passed" by the respondent. Think of this related to the dichotomous mode, where 0 and 1 are the only scores available and the sum score is just a count of the number of items with correct responses. In the polytomous case, the sum score is a count of the number of thresholds passed per item, summed together.
+
+## Psychometric criteria
+
+We could put any set of items into a Rasch model and just look at ICC curves and targeting and estimate thetas all we want. But that is no better than "sum score and alpha".
+
+## Unidimensionality {.smaller}
+
+While multidimensional constructs are possible, it is outside the scope of this lecture. Most often, even unidimensional measures are not well constructed. The most common problem (imho) is residual correlations. We'll look at four ways to assess unidimensionality in a Rasch model:
+
+-   Item fit statistics (MSQ and ZSTD)
+-   PCA of residuals
+-   Plot of factor loadings on the first residual contrast
+-   Residual correlation matrix for all items
+
+### PSS-14 example {.smaller}
+
+We'll use the same published dataset and paper analyzing the PSS-14 scale as before [@rozental2023] as an example for dimensionality analysis.
+
+We use multiple tests since there is no single test to establish unidimensionality. This is also true for CTT analysis.
+
+**Does everyone know what residuals are?**
+
+### Unidimensionality - Item fit {.smaller background-color="#ffffff"}
+
+::: columns
+::: {.column width="50%"}
+"Outfit" refers to item fit when person location is far from the item location, while "infit" refers to when person and item locations are close together. MSQ should be close to 1, with lower and upper cutoffs often set to 0.7 and 1.3, while ZSTD should be around 0, with cutoffs set to +/- 1.96. Infit is usually more important. Low fit indicates a better than expected fit to the Rasch model but can inflate reliability without adding much information. High fit often reflects multidimensionality.
+:::
+
+::: {.column width="50%"}
+```{r}
+# this is an updated function from the RISEkbmRasch package, soon available on GitHub, that allows to export results to a dataframe, which enables creating a table that fits the slide better
+RIitemfitPCM2m <- function(dfin, samplesize = 300, nsamples = 10, cpu = 4,
+                          zstd_min = -2, zstd_max = 2, msq_min = 0.7,
+                          msq_max = 1.3, fontsize = 15, fontfamily = "Lato",
+                          table = TRUE) {
+  library(doParallel)
+  registerDoParallel(cores = cpu)
+  df.erm <- PCM(dfin) # run PCM model
+  # get estimates, code borrowed from https://bookdown.org/chua/new_rasch_demo2/PC-model.html
+  person.locations.estimate <- person.parameter(df.erm)
+  item.fit <- eRm::itemfit(person.locations.estimate)
+
+  # ZSTD multisample
+  outfitZ <- c()
+  infitZ <- c()
+
+  infitZ <- foreach(icount(nsamples), .combine = cbind) %dopar% {
+    library(eRm)
+    df.new <- dfin[sample(1:nrow(dfin), samplesize), ]
+    df.new <- na.omit(df.new)
+    df.z <- PCM(df.new)
+    ple <- person.parameter(df.z)
+    item.fit.z <- eRm::itemfit(ple)
+    item.fit.z$i.infitZ
+  }
+
+  outfitZ <- foreach(icount(nsamples), .combine = cbind) %dopar% {
+    library(eRm)
+    df.new <- dfin[sample(1:nrow(dfin), samplesize), ]
+    df.new <- na.omit(df.new)
+    df.z <- PCM(df.new)
+    ple <- person.parameter(df.z)
+    item.fit.z <- eRm::itemfit(ple)
+    item.fit.z$i.outfitZ
+  }
+
+  item.fit.table <- as.data.frame(cbind(item.fit$i.outfitMSQ,
+                                        item.fit$i.infitMSQ,
+                                        rowMeans(outfitZ),
+                                        rowMeans(infitZ))) %>%
+    mutate(across(where(is.numeric), ~ round(.x, 3)))
+
+  colnames(item.fit.table) <- c("OutfitMSQ", "InfitMSQ", "OutfitZSTD", "InfitZSTD")
+
+  if (table == TRUE) {
+  # create table that highlights cutoff values in red
+  item.fit.table %>%
+    mutate(OutfitZSTD = cell_spec(OutfitZSTD, color = ifelse(OutfitZSTD < zstd_min, "red",
+      ifelse(OutfitZSTD > zstd_max, "red", "black")
+    ))) %>%
+    mutate(InfitZSTD = cell_spec(InfitZSTD, color = ifelse(InfitZSTD < zstd_min, "red",
+      ifelse(InfitZSTD > zstd_max, "red", "black")
+    ))) %>%
+    mutate(OutfitMSQ = cell_spec(OutfitMSQ, color = ifelse(OutfitMSQ < msq_min, "red",
+      ifelse(OutfitMSQ > msq_max, "red", "black")
+    ))) %>%
+    mutate(InfitMSQ = cell_spec(InfitMSQ, color = ifelse(InfitMSQ < msq_min, "red",
+      ifelse(InfitMSQ > msq_max, "red", "black")
+    ))) %>%
+    kbl(booktabs = T, escape = F) %>%
+    # bootstrap options are for HTML output
+    kable_styling(
+      bootstrap_options = c("striped", "hover"),
+      position = "left",
+      full_width = F,
+      font_size = fontsize,
+      fixed_thead = T
+    ) %>%
+    column_spec(1, bold = T) %>%
+    row_spec(0, bold = T) %>%
+    kable_classic(html_font = fontfamily) %>%
+    # latex_options are for PDF output
+    kable_styling(latex_options = c("striped", "scale_down"))
+  } else {
+    itemFitPCM <<- item.fit.table
+  }
+}
+RIitemfitPCM2m(pss14, 250, 12, 8, table = FALSE)
+
+zstd_min = -2
+zstd_max = 2
+msq_min = 0.7
+msq_max = 1.3
+```
+
+```{r}
+# itemFitPCM %>% 
+#   kable()
+RIitemfitPCM2(pss14, 250, 12, 8)
+
+```
+:::
+:::
+
+### PCA of residuals {.smaller}
+
+The highest eigenvalue should be below 2.0
+
+```{r}
+# from function RISEkbmRasch::RIpcmPCA(na.omit(pss14))
+dfin <- na.omit(pss14)
+df.erm <- PCM(dfin)
+item.estimates <- eRm::thresholds(df.erm)
+item_difficulty <- item.estimates[["threshtable"]][["1"]]
+item_difficulty <- as.data.frame(item_difficulty)
+item.se <- item.estimates$se.thresh
+person.locations.estimate <- person.parameter(df.erm)
+item.fit <- eRm::itemfit(person.locations.estimate)
+std.resids <- item.fit$st.res
+pca <- pca(std.resids, nfactors = ncol(dfin), rotate = "oblimin")
+eigenv <- pca$values %>% round(2) %>% head(5)
+kable(eigenv, col.names = "Eigenvalue")
+```
+
+### Loadings on 1st contrast {.smaller background-color="#ffffff"}
+
+```{r}
+RIloadLoc(pss14) + coord_cartesian(ylim = c(-0.75, 1.25), xlim = c(-0.5, 0.5))
+```
+
+### Residual correlation matrix {.smaller background-color="#ffffff"}
+
+```{r}
+#| fig-width: 5
+RIresidcorr(pss14, cutoff = 0.2)
+```
+
+We clearly have two clusters of items. Can you spot the pattern?
+
+## Ordered response categories {.smaller}
+
+A higher person location on the latent variable should entail an increased probability of a higher response (category) for all items and vice versa. This is sometimes referred to as 'monotonicity'.
+
+We can check this by looking at the item characteristic curves (ICC). So far, we have only seen ICCs with ordered response categories. We will look at an example with disordered response categories.
+
+### An important note on types of data {.smaller}
+
+-   Ordinal data - ordered response categories with unknown distance between categories.
+
+This is by far the most common type of data in psychology and social sciences. But it is extremely common to pretend that ordinal data is interval data, and use it as such in everything from simple calculations such as mean/SD to more complex statistical models. This is a problem [@liddell2018] and there are methods for analyzing ordinal data properly [@bürkner2019].
+
+Adding more response categories does not make them anything else than ordinal, neither does removing the labels. Visual Analogue Scales have no strong case for being interval level either. All three methods usually add to problems with disordered response categories.
+
+### Example: Flourishing Scale (FS) {.smaller}
+
+We'll use an open dataset [@didino] of the Flourishing Scale [@diener2010]. It has 8 items:
+
+```{r}
+#| echo: false
+# Load data and item information
+fs_data <- read_excel("data/data_FS_Didino2019.xlsx") %>% 
+  select(starts_with("flourish", ignore.case = FALSE)) 
+itemlabels <- read_excel("data/itemlabels_SWLS_FS.xlsx", sheet = 3)
+responseOptions <- read_excel("data/itemlabels_SWLS_FS.xlsx", sheet = 4)
+# output table
+kable(itemlabels)
+```
+
+### FS response categories {.smaller}
+
+All items share the same set of 7 response categories:
+
+```{r}
+#| echo: false
+# output table
+kable(responseOptions)
+```
+
+### ICC for item 6
+
+```{r}
+# Based on eRm package functions, see
+# https://github.com/cran/eRm/blob/master/R/plist.internal.R
+# https://github.com/cran/eRm/blob/master/R/plotICC.Rm.R
+
+xlim <- c(-4,5)
+object <- PCM(fs_data)
+
+theta  <- seq(xlim[1], xlim[2], length.out = 201L)   # x-axis
+
+plist.internal <- function(object, theta){
+
+  X <- object$X
+  mt_vek <- apply(X, 2L, max, na.rm = TRUE)   # number of categories - 1 for each item
+  mt_ind <- rep(seq_along(mt_vek), mt_vek)
+
+  #--------compute list matrix of probabilites for fixed theta)
+  p.list <- tapply(object$betapar, mt_ind, function(beta.i){
+    beta.i <- c(0, beta.i)
+    ind.h <- 0:(length(beta.i)-1)
+    theta.h <- tcrossprod(ind.h, theta) # ind.h %*% t(theta) # multiply category with
+    tb <- exp(theta.h + beta.i)
+    denom <- colSums(tb)
+    pi.mat <- apply(tb, 1L, function(y){ y/denom })
+    return(pi.mat)
+  })
+  return(p.list)
+}
+
+p.list <- plist.internal(object, theta) # matrix of probabilities
+th.ord <- order(theta)
+
+textlab <- colnames(object$X)
+ivec <- seq_along(p.list)
+
+yp <- as.matrix(p.list[[6]]) # choose which item to plot
+yy <- yp[th.ord,]
+
+x = sort(theta) # vector for x axis
+y = yp[th.ord,] # matrix with one vector per response category
+ylim = c(0,1)
+
+df.icc <- data.frame(matrix(ncol = 0, nrow = 201))
+df.icc <- rbind(df.icc,as.data.frame(y))
+df.icc$x <- sort(theta)
+
+
+categories <- responseOptions$Response
+
+df.icc <- df.icc %>%
+  pivot_longer(!x) %>%
+  dplyr::rename(Category = name,
+         Probability = value)
+
+getXY <- function(categoryN){
+  df.icc %>%
+    filter(Category == "V1") %>%
+    filter(Probability == mProb[1]) %>%
+    pull(x)
+}
+
+fontsize <- 15
+
+q6_ICC <- ggplot(df.icc,
+       aes(x = x, y = Probability, color = Category, group = Category)) +
+  geom_line(linewidth = 0.9) +
+  scale_x_continuous('Location (logit scale)', breaks = c(-4:5)) +
+  scale_y_continuous('Probability', breaks = seq(0,1,0.2)) +
+  theme_minimal(base_size = fontsize) +
+  theme_rise(axissize = fontsize) +
+  theme(axis.text = element_text(size = fontsize-1),
+        legend.text = element_text(size = fontsize-1),
+        legend.title = element_text(size = fontsize)) +
+  coord_cartesian(ylim = c(0,1), clip = "off") 
+q6_ICC + scale_color_viridis_d(option = "D", labels = str_wrap(categories,14), end = 0.97)
+```
+
+## Notes and drafts
+
+Everything below this point is just notes and drafts.
+
+## Report everything!?
+
+-   One can share a fully documented report file as an appendix document with the manuscript/paper/preprint
+-   A paper that uses this approach [@rozental2023]:
+
+> Rozental, A., Forsström, D., & Johansson, M. (2023). A psychometric evaluation of the Swedish translation of the Perceived Stress Scale: A Rasch analysis. BMC Psychiatry, 23(1), 690. https://doi.org/10.1186/s12888-023-05162-4
+
+## Bayesian IRT
+
+There are guides and tools available for doing Bayesian IRT in R as well. The `brms` package is highly recommended [@bürkner2017; @bürkner2021] and this excellent blog post: <https://solomonkurz.netlify.app/blog/2021-12-29-notes-on-the-bayesian-cumulative-probit/>
+
+### Measurement uncertainty
+
+All measurements have some degree of error/uncertainty.
+
+Even measuring concrete and directly accessible things like the weight of an object, there is ALWAYS a margin of error in the measurement.
+
+## References
+
+::: {#refs}
+:::
