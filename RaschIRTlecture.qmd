@@ -56,18 +56,48 @@ psychometric_criteria <- data.frame(
     "Targeting", "Reliability"
   ),
   Description = c(
-    "Items represent one latent variable, without strongly correlated item residuals. Principal Component Analysis and Exploratory Factor Analysis of raw data are explorative methods.",
+    "Items represent one latent variable, without strongly correlated item residuals ('local independence'). Principal Component Analysis and Exploratory Factor Analysis of raw data are explorative methods.",
     "A higher person location (sum score) on the latent variable should entail an increased probability of a higher response (category) for all items and vice versa. Sometimes referred to as 'monotonicity'.",
     "Item and measure properties are consistent between relevant demographic groups (gender, age, ethnicity, time, etc). Test-retest correlation is not an invariance test since it does not provide information about item properties.",
     "Item (threshold) locations compared to person locations should be well matched and not show ceiling or floor effects, or large gaps.",
     "Sufficient reliability for the expected properties of the target population and intended use of results. Reliability is contingent upon the other criteria being fulfilled and should not be reported for scales with inadequate properties."
   )
 )
-# Load data and item information
+
+# Flourishing Scale
 itemlabels_fs <- read_excel("data/itemlabels_SWLS_FS.xlsx", sheet = 3)
 responseOptions <- read_excel("data/itemlabels_SWLS_FS.xlsx", sheet = 4)
 fs_data <- read_excel("data/data_FS_Didino2019.xlsx") %>% 
-  select(starts_with("flourish", ignore.case = FALSE)) 
+  select(starts_with("flourish", ignore.case = FALSE),Sex,Education) %>% 
+  mutate(across(starts_with("flourish"), ~ .x - 1)) %>% 
+  na.omit()
+
+fs_dif_sex <- factor(fs_data$Sex)
+fs_dif_edu <- factor(fs_data$Education)
+fs_data$Sex <- NULL
+fs_data$Education <- NULL
+
+# Perceived Stress Scale
+pss14 <- read_excel("data/Swedish_PSS_Rasch_analysis.xlsx") %>% 
+  janitor::clean_names()
+itemlabels <- read_excel("data/PSS14itemlabels.xls")
+names(pss14) <- c("age","gender",itemlabels$itemnr)
+
+pss7p <- pss14 %>% 
+  select(ends_with("p"),age,gender) %>% 
+  na.omit()
+pss7p_dif_age <- pss7p$age
+pss7p_dif_gender <- pss7p$gender
+pss7p$age <- NULL
+pss7p$gender <- NULL
+
+dif_age <- pss14$age
+dif_gender <- pss14$gender
+pss14$age <- NULL
+pss14$gender <- NULL
+pss7 <- pss14 %>% 
+  select(ends_with("n"))
+
 
 ```
 
@@ -198,11 +228,7 @@ psychometric_criteria %>%
   kable()
 ```
 
-## Classical vs modern test theory {.smaller background-color="#009ca6"}
-
-> *CTT = factor analysis, principal component analysis, etc*
->
-> *Modern test theory = IRT, Rasch, Mokken, etc*
+## Classical vs modern test theory {.smaller}
 
 Major differences:
 
@@ -214,6 +240,10 @@ Major differences:
 -   IRT enables estimation of latent variable scores on an interval scale
 -   Only Rasch models can justify ordinal sum scores as a sufficient metric to represent measurement on the latent construct scale
     -   Also... Rasch is a special case, see [@andrich2004; @kyngdon2008].
+
+::: footer
+CTT = factor analysis, principal component analysis, etc; Modern test theory = IRT, Rasch, Mokken, etc
+:::
 
 ### Fallacies with either method
 
@@ -488,19 +518,6 @@ We'll focus on the Rasch model, in part since it is complicated enough for this 
 ### ICC for polytomous models {.smaller}
 
 This is the same type of figure as before, and it now shows probabilities for all response categories for one item. **How do you interpret it?**
-
-```{r}
-pss14 <- read_excel("data/Swedish_PSS_Rasch_analysis.xlsx") %>% 
-  janitor::clean_names()
-itemlabels <- read_excel("data/PSS14itemlabels.xls")
-dif_age <- pss14$age
-dif_gender <- pss14$gender
-pss14$age <- NULL
-pss14$gender <- NULL
-names(pss14) <- itemlabels$itemnr
-pss7 <- pss14 %>% 
-  select(ends_with("n"))
-```
 
 ```{r}
 #| fig-width: 7
@@ -1076,7 +1093,7 @@ We have been using the Partial Credit Model with Conditional Maximum Likelihood 
 
 When analyzing polytomous data with Rasch/IRT models, the lowest response category is always set to 0, as it reflects on the number of thresholds "passed" by the respondent. Think of this related to the dichotomous mode, where 0 and 1 are the only scores available and the sum score is just a count of the number of items with correct responses. In the polytomous case, the sum score is a count of the number of thresholds passed per item, summed together.
 
-## Psychometric criteria
+## Psychometric criteria {background-color="#009ca6"}
 
 We could put any set of items into a Rasch model and just look at ICC curves and targeting and estimate thetas all we want. But that is no better than "sum score and alpha".
 
@@ -1229,10 +1246,12 @@ RIloadLoc(pss14) + coord_cartesian(ylim = c(-0.75, 1.25), xlim = c(-0.5, 0.5))
 We clearly have two clusters of items. Can you spot the pattern?
 
 ### Residual correlation matrix {.smaller background-color="#ffffff"}
+
 ::: columns
 ::: {.column width="30%"}
 It is the relative correlation between items that is important, not the absolute value. The residual correlations should not be above 0.2 above the mean correlation of all item pairs [@christensen2017].
 :::
+
 ::: {.column width="70%"}
 ```{r}
 #| fig-width: 5
@@ -1242,20 +1261,23 @@ RIresidcorr(pss14, cutoff = 0.2)
 :::
 
 ### Another residual corr matrix {.smaller background-color="#ffffff"}
+
 ::: columns
 ::: {.column width="40%"}
 This better illustrates the issue of items being too similar, often referred to as 'local dependence'.
+
 ```{r}
 kbl_rise(itemlabels_fs)
 ```
-
 :::
+
 ::: {.column width="60%"}
 ```{r}
 RIresidcorr(fs_data, 0.2)
 ```
 :::
 :::
+
 ## Ordered response categories {.smaller}
 
 A higher person location on the latent variable should entail an increased probability of a higher response (category) for all items and vice versa. This is sometimes referred to as 'monotonicity'.
@@ -1384,10 +1406,57 @@ Long term, it is important to investigate the cause and revise the questionnaire
 
 ## Invariance {.smaller}
 
+-   In essence, invariance is about the stability of item locations across subgroups. It can be explained as an interaction effect between item location and a demographic variable.
+-   Invariance is important to establish for comparability between groups of interest.
+-   For instance, given that two persons with same theta, belonging to different groups (i.e gender), each item should have the same response threshold probability.
+
+### Invariance pt 2
+
+-   We can have global tests of invariance, that check the measurement model as a whole and compare groups.
+    -   Likelihood ratio test (LRT)
+-   And, more interesting, tests that examine each item separately
+    -   Differential Item Functioning (DIF)
+-   Several types of tests are available for both
+    -   some tests can only handle two groups, some can deal with interactions between two types of groups (education level+sex) and continuous variables (age in years)
+
+### DIF example
+
+```{r}
+pss7p %>% 
+  mutate(q4p = recode(q4p,"1=0;2=1;3=2;4=3")) %>%
+  RIdifTable(pss7p_dif_age)
+```
+
+### DIF figure item locations
+
+```{r}
+pss7p %>% 
+  mutate(q4p = recode(q4p,"1=0;2=1;3=2;4=3")) %>%
+  RIdifFigure(pss7p_dif_age) +
+  theme_rise() +
+  labs(title = "Item average locations",
+       subtitle = "DIF by age (group 2 < 32yrs; group 3 > 31yrs)")
+```
+
+### DIF figure item thresholds
+
+```{r}
+#| fig-cap: "Item threshold locations"
+pss7p %>% 
+  mutate(q4p = recode(q4p,"1=0;2=1;3=2;4=3")) %>%
+  RIdifFigThresh(pss7p_dif_age) +
+  theme_rise() +
+  labs(title = "Item threshold locations",
+       subtitle = "DIF by age (group 2 < 32yrs; group 3 > 31yrs)")
+```
+
+### DIF ICC
+
+![](images/DIFicc.png)
 
 ## Reliability {.smaller}
 
-
+Affects power to detect changes in the latent trait. Reliability is a function of the number of items/item thresholds and the item locations. The more items and the more spread out the item locations are, the higher the reliability.
 
 ## Notes and drafts
 
@@ -1396,6 +1465,11 @@ Everything below this point is just notes and drafts.
 ## Report everything!?
 
 -   One can share a fully documented report file as an appendix document with the manuscript/paper/preprint
+-   Very helpful for oneself as a traceable record of the analysis process
+-   collect code and comments in one place with R and \<quarto.org\>
+-   This is a good way to share the analysis and make it reproducible
+-   Makes it easier for others to learn about (and critique) the analysis
+-   Helpful during the review process
 -   A paper that uses this approach [@rozental2023]:
 
 > Rozental, A., Forsström, D., & Johansson, M. (2023). A psychometric evaluation of the Swedish translation of the Perceived Stress Scale: A Rasch analysis. BMC Psychiatry, 23(1), 690. https://doi.org/10.1186/s12888-023-05162-4
