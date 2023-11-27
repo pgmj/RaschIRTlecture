@@ -2,7 +2,7 @@
 
 This is a repository with lecture slides and code for a lecture given at Uppsala University in November of 2023.
 
-The slides can be viewed on GitHub Pages at: <https://pgmj.github.io/>
+The slides can be viewed on GitHub Pages at: <https://pgmj.github.io/RaschIRTlecture/slides.html>
 
 ## Author
 
