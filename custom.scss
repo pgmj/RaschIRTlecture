@@ -1,0 +1,32 @@
+// many things in this file were borrowed from https://emilhvitfeldt.github.io/quarto-iframe-examples/
+/*-- scss:defaults --*/
+$theme-darkblue: #0e4e65;
+$theme-blue: #8dc8c7;
+$theme-white: #F7F8F9;
+$theme-yellow: #F4BA02;
+
+$body-bg: $theme-darkblue;
+$body-color: $theme-white;
+$link-color: #FF876F;
+$code-color: $theme-yellow;
+$presentation-heading-color: lighten($theme-blue, 15%);
+$presentation-h2-font-size: 1.8em;
+$presentation-h3-font-size: 1.8em;
+
+// fonts
+$font-family-sans-serif: "Lato", Helvetica, sans-serif !default;
+// headings
+$presentation-heading-font: "Code Pro", sans-serif !default;
+
+/*-- scss:rules --*/
+
+.reveal {
+  .slides {
+    .slide {
+      img+p.caption {
+        font-size: 0.4em;
+        text-align: center;
+      }
+    }
+  }
+}
