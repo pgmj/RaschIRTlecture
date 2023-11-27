@@ -63,6 +63,11 @@ psychometric_criteria <- data.frame(
     "Sufficient reliability for the expected properties of the target population and intended use of results. Reliability is contingent upon the other criteria being fulfilled and should not be reported for scales with inadequate properties."
   )
 )
+# Load data and item information
+itemlabels_fs <- read_excel("data/itemlabels_SWLS_FS.xlsx", sheet = 3)
+responseOptions <- read_excel("data/itemlabels_SWLS_FS.xlsx", sheet = 4)
+fs_data <- read_excel("data/data_FS_Didino2019.xlsx") %>% 
+  select(starts_with("flourish", ignore.case = FALSE)) 
 
 ```
 
@@ -1221,15 +1226,36 @@ kable(eigenv, col.names = "Eigenvalue")
 RIloadLoc(pss14) + coord_cartesian(ylim = c(-0.75, 1.25), xlim = c(-0.5, 0.5))
 ```
 
-### Residual correlation matrix {.smaller background-color="#ffffff"}
+We clearly have two clusters of items. Can you spot the pattern?
 
+### Residual correlation matrix {.smaller background-color="#ffffff"}
+::: columns
+::: {.column width="30%"}
+It is the relative correlation between items that is important, not the absolute value. The residual correlations should not be above 0.2 above the mean correlation of all item pairs [@christensen2017].
+:::
+::: {.column width="70%"}
 ```{r}
 #| fig-width: 5
 RIresidcorr(pss14, cutoff = 0.2)
 ```
+:::
+:::
 
-We clearly have two clusters of items. Can you spot the pattern?
+### Another residual corr matrix {.smaller background-color="#ffffff"}
+::: columns
+::: {.column width="40%"}
+This better illustrates the issue of items being too similar, often referred to as 'local dependence'.
+```{r}
+kbl_rise(itemlabels_fs)
+```
 
+:::
+::: {.column width="60%"}
+```{r}
+RIresidcorr(fs_data, 0.2)
+```
+:::
+:::
 ## Ordered response categories {.smaller}
 
 A higher person location on the latent variable should entail an increased probability of a higher response (category) for all items and vice versa. This is sometimes referred to as 'monotonicity'.
@@ -1242,20 +1268,14 @@ We can check this by looking at the item characteristic curves (ICC). So far, we
 
 This is by far the most common type of data in psychology and social sciences. But it is extremely common to pretend that ordinal data is interval data, and use it as such in everything from simple calculations such as mean/SD to more complex statistical models. This is a problem [@liddell2018] and there are methods for analyzing ordinal data properly [@bürkner2019].
 
-Adding more response categories does not make them anything else than ordinal, neither does removing the labels. Visual Analogue Scales have no strong case for being interval level either. All three methods usually add to problems with disordered response categories.
+*Adding more response categories does not make them anything else than ordinal, neither does removing the labels. Visual Analogue Scales have no strong case for being interval level either. All three methods usually add to problems with disordered response categories and invariance issues.*
 
 ### Example: Flourishing Scale (FS) {.smaller}
 
 We'll use an open dataset [@didino] of the Flourishing Scale [@diener2010]. It has 8 items:
 
 ```{r}
-#| echo: false
-# Load data and item information
-fs_data <- read_excel("data/data_FS_Didino2019.xlsx") %>% 
-  select(starts_with("flourish", ignore.case = FALSE)) 
-itemlabels <- read_excel("data/itemlabels_SWLS_FS.xlsx", sheet = 3)
-responseOptions <- read_excel("data/itemlabels_SWLS_FS.xlsx", sheet = 4)
-# output table
+itemlabels <- itemlabels_fs
 kable(itemlabels)
 ```
 
@@ -1264,7 +1284,6 @@ kable(itemlabels)
 All items share the same set of 7 response categories:
 
 ```{r}
-#| echo: false
 # output table
 kable(responseOptions)
 ```
@@ -1342,11 +1361,33 @@ q6_ICC <- ggplot(df.icc,
   theme_minimal(base_size = fontsize) +
   theme_rise(axissize = fontsize) +
   theme(axis.text = element_text(size = fontsize-1),
-        legend.text = element_text(size = fontsize-1),
+        legend.text = element_text(size = fontsize-3),
         legend.title = element_text(size = fontsize)) +
   coord_cartesian(ylim = c(0,1), clip = "off") 
 q6_ICC + scale_color_viridis_d(option = "D", labels = str_wrap(categories,14), end = 0.97)
 ```
+
+### Disordered response categories {.smaller}
+
+What we look for in this figure is response categories that at no point on the x axis has the highest probability. Visually, this means that the probability curve never goes "above" other categories. Which ones can you identify in this example?
+
+```{r}
+#| fig-width: 8
+q6_ICC + scale_color_viridis_d(option = "D", labels = str_wrap(categories,14), end = 0.97)
+```
+
+### Addressing disordered response categories {.smaller}
+
+There are several ways to address disordered response categories in the analysis phase. The most common is to merge adjacent categories and rerun the ICC analysis to check results. However, disordered thresholds can (at least partially) be a sign of other problems, such as misfitting items, multidimensionality, or local dependence.
+
+Long term, it is important to investigate the cause and revise the questionnaire. Usually, the cause of disordered categories is related to having too many response categories, having bad or no labels on categories (only endpoints labeled is bad practice). Also, item formulation needs to meld well with the response categories.
+
+## Invariance {.smaller}
+
+
+## Reliability {.smaller}
+
+
 
 ## Notes and drafts
 
