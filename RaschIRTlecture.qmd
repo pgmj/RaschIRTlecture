@@ -108,17 +108,16 @@ pss7 <- pss14 %>%
 -   Types of data
 -   Brief comparison of classical test theory and IRT
 -   Overview of IRT models
--   Examples using the Rasch/1PL model
-    -   if we have time, we'll walk through a full analysis from a recent paper
+-   Examples using the Rasch model
+    -  assessing the psychometric criteria
 
 ### Useful links
 
--   Github repo for this presentation: <https://github.com/pgmj/>
--   The slides can be followed at: \<\>
-    -   and downloaded here:
--   My email: [magnus.p.johansson\@ri.se](mailto:magnus.p.johansson@ri.se){.email}
+-   Github repo for this presentation: <https://github.com/pgmj/RaschIRTlecture>
+-   The slides are available at: <https://pgmj.github.io/RaschIRTlecture/slides.html>
+-   My email: [magnus.p.johansson@ri.se](mailto:magnus.p.johansson@ri.se){.email}
 
-## Latent constructs {background-color="#009ca6"}
+## Latent constructs {.smaller background-color="#009ca6"}
 
 We want to measure something that is not directly accessible by using one or more proxy indicators.
 
@@ -1456,7 +1455,7 @@ pss7p %>%
 
 ## Reliability {.smaller}
 
-Affects power to detect changes in the latent trait. Reliability is a function of the number of items/item thresholds and the item locations. The more items and the more spread out the item locations are, the higher the reliability.
+Affects statistical power to detect changes in the latent trait. Reliability is a function of the number of items/item thresholds and the item locations. The more items and the more spread out the item locations are, the higher the reliability.
 
 ## Notes and drafts
 
