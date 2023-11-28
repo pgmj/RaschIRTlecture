@@ -50,6 +50,10 @@ library(mirt)
 library(readxl)
 library(catR)
 library(janitor)
+library(qrcode)
+
+qr_slides <- qr_code("https://pgmj.github.io/RaschIRTlecture/slides.html")
+
 
 psychometric_criteria <- data.frame(
   stringsAsFactors = FALSE,
@@ -128,8 +132,14 @@ pss7 <- pss14 %>%
 ### Useful links
 
 -   Github repo for this presentation: <https://github.com/pgmj/RaschIRTlecture>
--   The slides are available at: <https://pgmj.github.io/RaschIRTlecture/slides.html>
+-   Presention: <https://pgmj.github.io/RaschIRTlecture/slides.html>
 -   My email: [magnus.p.johansson\@ri.se](mailto:magnus.p.johansson@ri.se){.email}
+```{r}
+#| fig-width: 2
+#| fig-height: 2
+plot(qr_slides)
+```
+
 
 ## Latent constructs {.smaller background-color="#009ca6"}
 
