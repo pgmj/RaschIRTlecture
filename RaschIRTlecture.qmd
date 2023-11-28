@@ -34,7 +34,9 @@ execute:
   cache: true
 editor_options: 
   chunk_output_type: console
-bibliography: references.bib
+bibliography: 
+ - references.bib
+ - grateful-refs.bib
 ---
 
 ```{r}
@@ -47,6 +49,7 @@ library(patchwork)
 library(mirt)
 library(readxl)
 library(catR)
+library(janitor)
 
 psychometric_criteria <- data.frame(
   stringsAsFactors = FALSE,
@@ -109,13 +112,24 @@ pss7 <- pss14 %>%
 -   Brief comparison of classical test theory and IRT
 -   Overview of IRT models
 -   Examples using the Rasch model
-    -  assessing the psychometric criteria
+    -   assessing the psychometric criteria
+
+## About me {.smaller}
+
+- Lic. psychologist & PhD behavior analysis
+- Scientist at RISE Research Institutes of Sweden
+  - Department of Measurement Science and Technology
+- Background: 
+  - CEO in private care
+  - 10 years consulting; OBM, leadership/groups/organizations, sustainability, etc.
+  - Swedish pilot trial of the PAX Good Behavior Game (Public Health Agency, Karolinska Institutet, Dennis Embry)
+  - Very interested in prevention and measurement :)
 
 ### Useful links
 
 -   Github repo for this presentation: <https://github.com/pgmj/RaschIRTlecture>
 -   The slides are available at: <https://pgmj.github.io/RaschIRTlecture/slides.html>
--   My email: [magnus.p.johansson@ri.se](mailto:magnus.p.johansson@ri.se){.email}
+-   My email: [magnus.p.johansson\@ri.se](mailto:magnus.p.johansson@ri.se){.email}
 
 ## Latent constructs {.smaller background-color="#009ca6"}
 
@@ -469,8 +483,8 @@ Let's return to the items you created before.
 
 ::: incremental
 -   How would you describe the location of the items in terms of hierarchy amongst them?
-    -   Did you think about the items in terms of difficulty when you created them?
--   How would you expect a normal population to perform on these items, in terms of the distribution of their ability relative to the item locations?
+    -   Did you think about the items in terms of location/difficulty when you created them?
+-   For each item, which response do you think would be the most common, based on the average person as a respondent?
 :::
 
 ### Other IRT models {.smaller}
@@ -1453,15 +1467,126 @@ pss7p %>%
 
 ![](images/DIFicc.png)
 
+### DIF comments {.smaller}
+
+-   Important and complex topic
+-   The practical effects of DIF found are affected both by the total number of items and the size of the DIF
+-   Large sample sizes will indicate statistically significant DIF, but DIF size is the key metric
+-   How to deal with problematic DIF is outside the scope of this lecture
+  -   For more examples and details on DIF, see: [@andrich2012; @andrich2015; @hagquist2019; @hagquist2017]
+
 ## Reliability {.smaller}
 
-Affects statistical power to detect changes in the latent trait. Reliability is a function of the number of items/item thresholds and the item locations. The more items and the more spread out the item locations are, the higher the reliability.
+Affects statistical power to detect changes/differences in the latent trait. Reliability is a function of the number of items/item thresholds and the item locations. The more items and the more spread out the item locations are, the higher the reliability.
 
-## Notes and drafts
+It is important to understand the reliability of the measure itself, and then how it applies to the population of interest. Since reliability is not constant across the latent variable continuum, targeting becomes a factor in determining reliability in a practical use case.
 
-Everything below this point is just notes and drafts.
+### Standard error of measurement {.smaller} 
 
-## Report everything!?
+Recall this figure? The horizontal lines around the diamond shapes get smaller and smaller for each item we add.
+```{r}
+p1_8_12_2 / p3_12_8_2 + plot_layout(heights = c(1, 0.6))
+```
+
+### SEM figure 1
+
+```{r}
+#| fig-width: 7
+RIscoreSE(pss7, output = "figure",score_range = c(-4,5)) +
+  labs(title = "Ordinal sum score vs interval score",
+       subtitle = "PSS-7",
+       caption = "Note: Horizontal lines show SEM * 1.96 (95% CI)") +
+  theme_rise()
+```
+
+### SEM figure 2
+```{r}
+#| fig-width: 7
+ordinal_interval <- RIscoreSE(pss7, output = "dataframe", score_range = c(-4,5)) %>% 
+  janitor::clean_names()
+
+ordinal_interval %>% 
+  ggplot(aes(x = logit_score, y = logit_std_error)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(yintercept = 0.54, linetype = "dashed") +
+  geom_hline(yintercept = 0.45, linetype = "dashed") +
+  geom_hline(yintercept = 0.32, linetype = "dashed") +
+  labs(title = "Standard error of measurement",
+       subtitle = "PSS-7 negative items",
+       caption = "Note: Horizontal dashed lines show SEM = 0.54 (PSI = 0.7), SEM = 0.45 (PSI 0.8), and SEM = 0.32 (PSI 0.9)") +
+  theme_rise() +
+  scale_y_continuous(limits = c(0,1.5), breaks = seq(0,1.5,0.1)) +
+  labs(x = "Logit score", y = "Logit standard error")
+
+```
+
+### SEM by item
+
+```{r}
+#| fig-width: 7
+
+# item order 1, 2, 3, 8, 11, 12, 14
+theta4 <- thetaEst(x = c(1,1,NA,2,NA,3,NA), model = "PCM", method = "WL", it = items)
+sem4 <- semTheta(thEst = theta1, x = c(1,1,NA,2,NA,3,NA), model = "PCM", method = "WL", it = items)
+
+theta5 <- thetaEst(x = c(1,1,2,2,NA,3,NA), model = "PCM", method = "WL", it = items)
+sem5 <- semTheta(thEst = theta1, x = c(1,1,2,2,NA,3,NA), model = "PCM", method = "WL", it = items)
+
+theta6 <- thetaEst(x = c(1,1,2,2,1,3,NA), model = "PCM", method = "WL", it = items)
+sem6 <- semTheta(thEst = theta1, x = c(1,1,2,2,1,3,NA), model = "PCM", method = "WL", it = items)
+
+theta7 <- thetaEst(x = c(1,1,2,2,1,3,1), model = "PCM", method = "WL", it = items)
+sem7 <- semTheta(thEst = theta1, x = c(1,1,2,2,1,3,1), model = "PCM", method = "WL", it = items)
+
+# bind all theta and sem estimations together in a dataframe with two variables
+theta_sem <- bind_rows(
+  data.frame(theta = theta1, sem = sem1, item = 1),
+  data.frame(theta = theta2, sem = sem2, item = 2),
+  data.frame(theta = theta3, sem = sem3, item = 3),
+  data.frame(theta = theta4, sem = sem4, item = 4),
+  data.frame(theta = theta5, sem = sem5, item = 5),
+  data.frame(theta = theta6, sem = sem6, item = 6),
+  data.frame(theta = theta7, sem = sem7, item = 7)
+)
+
+theta_sem %>% 
+  ggplot(aes(x = item, y = theta, group = 1)) +
+  geom_point(size = 3, color = "#009ca6") +
+  geom_line(linewidth = 1.1, color = "#009ca6") +
+  geom_ribbon(aes(ymin = theta - sem, ymax = theta + sem), alpha = 0.2, fill = "#009ca6") +
+  theme_rise() +
+  labs(title = "Standard error of measurement by number of items administered",
+       subtitle = "PSS-7 negative items",
+       caption = "Note: Shaded area shows SEM",
+       y = "Estimated theta for one respondent", x = "Number of items administered to respondent")
+  
+```
+
+### Targeting & reliability
+
+```{r}
+#| fig-width: 8
+p3f <- p3 + geom_hline(yintercept = theta7, linetype = "dashed")
+p2f <- p2 + geom_vline(xintercept = theta7, linetype = "dashed")
+p1f <- p1 + geom_vline(xintercept = theta7, linetype = "dashed")
+p1f / p2f / p3f + plot_layout(heights = c(1, 1, 1.5))
+
+```
+
+::: notes
+Not many item thresholds in the location of the respondent, which means that the estimated theta has larger uncertainty than at other parts of the scale where more thresholds are spread out.
+:::
+
+## Wrapping up {.smaller}
+
+- We have covered a lot of material today!
+- Most of it you are not expected to remember (few know these things)
+- You will be expected to know basic terms and concepts
+- You now know that these methods and tools exist and where to find them
+  - I have created an R package for Rasch analysis: (RISEkbmRasch)[https://pgmj.github.io/raschrvignette/RaschRvign.html]
+
+## Report everything!? {.smaller}
 
 -   One can share a fully documented report file as an appendix document with the manuscript/paper/preprint
 -   Very helpful for oneself as a traceable record of the analysis process
@@ -1482,6 +1607,19 @@ There are guides and tools available for doing Bayesian IRT in R as well. The `b
 All measurements have some degree of error/uncertainty.
 
 Even measuring concrete and directly accessible things like the weight of an object, there is ALWAYS a margin of error in the measurement.
+
+## R packages used
+
+```{r}
+library(grateful)
+pkgs <- cite_packages(cite.tidyverse = TRUE, 
+                      output = "table",
+                      bib.file = "grateful-refs.bib",
+                      include.RStudio = TRUE,
+                      out.dir = getwd())
+formattable(pkgs, 
+            table.attr = 'class=\"table table-striped\" style="font-size: 14px; font-family: Lato; width: 80%"')
+```
 
 ## References
 
