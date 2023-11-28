@@ -22,7 +22,7 @@ format:
     scrollable: false
     center: false
     logo: RISE_NEG.png
-    multiplex: false
+    multiplex: true
     reference-location: document
     code-overflow: wrap
     code-link: true
