@@ -2,7 +2,9 @@
 
 This is a repository with lecture slides and code for a lecture given at Uppsala University in November of 2023.
 
-The slides can be viewed on GitHub Pages at: <https://pgmj.github.io/RaschIRTlecture/slides.html>
+The slides are made with [Quarto](https://www.quarto.org) and can be viewed on GitHub Pages at: <https://pgmj.github.io/RaschIRTlecture/slides.html>
+
+If you want to use this material as a teacher you can [clone the repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) and use the file `RaschIRTlecture-speaker.html` [file in the root directory](https://github.com/pgmj/RaschIRTlecture/blob/main/RaschIRTlecture-speaker.html) to present. The "-speaker" file uses the multiplex function in Quarto, which makes students (that view the slides using the previous link/file) follow along when you change slide.
 
 ## Author
 
