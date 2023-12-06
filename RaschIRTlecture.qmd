@@ -662,6 +662,7 @@ q12nICC <- ggplot(df.icc,
         legend.text = element_text(size = fontsize-1),
         legend.title = element_text(size = fontsize)) +
   coord_cartesian(ylim = c(0,1), clip = "off")
+
 q12nICC + scale_color_viridis_d(option = "D", labels = categories, end = 0.97)
 ```
 
@@ -757,7 +758,7 @@ As you can see, the line is longer than the area between the thresholds, which u
 
 ### In context {.smaller}
 
-Is this person's theta a high or low value? How does it relate to the overall population?
+Is this person's theta a high or low value? How does it relate to the overall sample?
 
 ::: fragment
 ```{r}
@@ -843,7 +844,7 @@ p1 <- ggplot() +
   geom_histogram(
     data = subset(df.locations, type == "Persons"),
     aes(locations, fill = "Persons", y = after_stat(count)),
-    bins = 45
+    bins = 45, alpha = 0.9
   ) +
   xlab("") +
   ylab("Persons") +
@@ -853,8 +854,7 @@ p1 <- ggplot() +
   geom_text(hjust = 1.1, vjust = 1) +
   theme_bw(base_size = 15, base_family = "Lato") +
   theme(
-    legend.position = "none",
-    text = element_text(family = "sans")
+    legend.position = "none"
   )
 
 # Item Threshold location histogram (middle plot)
@@ -870,24 +870,28 @@ p2 <- ggplot() +
   geom_vline(xintercept = item.mean, color = "#e83c63", linetype = 2) +
   annotate("rect", ymin = 0, ymax = Inf, xmin = (item.mean - item.thresh.sd), xmax = (item.mean + item.thresh.sd), alpha = .2) +
   geom_text(hjust = 1.1, vjust = 1) +
-  theme_bw() +
+  theme_bw(base_size = 15, base_family = "Lato") +
   theme(legend.position = "none")
 
 # make plot with each items thresholds shown as dots (bottom plot)
-p3 <- ggplot(itemloc.long, aes(x = names, y = par_values, label = thresholds, color = names)) +
+p3 <- ggplot(itemloc.long, aes(x = names, y = par_values, label = thresholds, color = thresholds)) +
   geom_point() +
-  geom_text(hjust = 1.1, vjust = 1) +
+  geom_text(hjust = 1.2, vjust = 1) +
+  scale_color_viridis_d(option = "D", end = 0.97) +
   scale_y_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
-  theme_bw() +
+  theme_bw(base_size = 15, base_family = "Lato") +
   theme(legend.position = "none") +
-  coord_flip() +
+  coord_flip(clip = "off") +
   labs(y = "Location (logit scale)",
        x = "Items",
        caption = paste0(
          "Person location average: ", pi.locations[3, 2], " (SD ", pi.locations[3, 3], "), Item threshold location average: ",
          pi.locations[2, 2], " (SD ", pi.locations[2, 3], "). Sample size: ",nrow(dfin),"."
        )) +
-  theme(plot.caption = element_text(hjust = 0, face = "italic"))
+  theme(plot.caption = element_text(hjust = 0, 
+                                    face = "italic", 
+                                    size = 12)
+        )
 
 p1_r4 <- p1 +  
   geom_point(aes(x = theta1, y = 25), size = 5, color = "black", shape = 18) +
@@ -916,12 +920,12 @@ p3_r4 <-
   itemloc.long %>% 
   filter(names == "q12n") %>%
   ggplot(aes(x = names, y = par_values, label = thresholds, color = thresholds)) +
-  geom_point() +
-  geom_text(hjust = 1.1, vjust = 1) +
+  geom_point(size = 2.5) +
+  geom_text(hjust = 1.3, vjust = 1) +
+  scale_color_viridis_d(option = "D", end = 0.97) +
   scale_y_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
   theme_bw(base_size = 15, base_family = "Lato") +
   theme(legend.position = "none") +
-  scale_color_viridis_d(option = "D", end = 0.97) +
   coord_flip() +
   labs(y = "",
        x = "Items"
@@ -931,6 +935,7 @@ p3_r4 <-
            alpha = .3, fill = "lightblue", color = "black")
   
 p1_r4 / p3_r4 / q12n_r4 + plot_layout(heights = c(1.3, 0.4, 1.3))
+
 ```
 
 ### Adding another item {.smaller}
@@ -944,9 +949,10 @@ q8n_locs <- pss7params %>%
 p3_12_8 <- 
   itemloc.long %>% 
   filter(names %in% c("q8n","q12n")) %>%
-  ggplot(aes(x = names, y = par_values, label = thresholds, color = names)) +
-  geom_point() +
-  geom_text(hjust = 1.1, vjust = 1) +
+  ggplot(aes(x = names, y = par_values, label = thresholds, color = thresholds)) +
+  geom_point(size = 2.5) +
+  geom_text(hjust = 1.3, vjust = 1) +
+  scale_color_viridis_d(option = "D", end = 0.97) +
   scale_y_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
   theme_bw(base_size = 15, base_family = "Lato") +
   theme(legend.position = "none") +
@@ -983,11 +989,12 @@ q2n_locs <- pss7params %>%
 p3_12_8_2 <- 
   itemloc.long %>% 
   filter(names %in% c("q2n","q8n","q12n")) %>%
-  ggplot(aes(x = names, y = par_values, label = thresholds, color = names)) +
-  geom_point() +
-  geom_text(hjust = 1.1, vjust = 1) +
+  ggplot(aes(x = names, y = par_values, label = thresholds, color = thresholds)) +
+  geom_point(size = 2.5) +
+  geom_text(hjust = 1.3, vjust = 1) +
+  scale_color_viridis_d(option = "D", end = 0.97) +
   scale_y_continuous(limits = xlim, breaks = scales::breaks_extended(n = 10)) +
-  theme_bw() +
+  theme_bw(base_size = 15, base_family = "Lato") +
   theme(legend.position = "none") +
   coord_flip() +
   labs(y = "",
@@ -1167,7 +1174,7 @@ Especially when creating a measure, researchers should have hypotheses about the
 
 **Test information** - reflects item properties, not sample/person properties.
 
--   The same goes for test-retest as a reliability test, it should be used to assess stability in item properties, not sample properties.
+-   The same goes for test-retest as a reliability test, it should be used to assess stability in item properties over time, not sample properties.
 
 ```{r}
 #| echo: true
@@ -1177,17 +1184,21 @@ RItif(pss7) + theme_rise()
 
 ## Summing up polytomous models {.smaller}
 
-We have been using the Partial Credit Model with Conditional Maximum Likelihood estimation, using the `eRm` package for R.
+We have been using the Partial Credit Model with Conditional Maximum Likelihood estimation, using the `eRm` package for R. 
 
-When analyzing polytomous data with Rasch/IRT models, the lowest response category is always set to 0, as it reflects on the number of thresholds "passed" by the respondent. Think of this related to the dichotomous mode, where 0 and 1 are the only scores available and the sum score is just a count of the number of items with correct responses. In the polytomous case, the sum score is a count of the number of thresholds passed per item, summed together.
+When analyzing polytomous data with Rasch/IRT models, the lowest response category is always set to 0, as it reflects on the number of thresholds "passed" by the respondent. 
+
+Think of this related to the dichotomous mode, where 0 and 1 are the only scores available and the sum score is just a count of the number of items with correct responses. In the polytomous case, the sum score is a count of the number of thresholds passed per item, summed together.
 
 ## Psychometric criteria {background-color="#009ca6"}
 
-We could put any set of items into a Rasch model and just look at ICC curves and targeting and estimate thetas all we want. But that is no better than "sum score and alpha".
+We could put any set of items into a Rasch model and just look at ICC curves and targeting and estimate thetas. But that is not much better than "sum score and alpha".
+
+So let's put the Rasch model to use in context of the five psychometric criteria mentioned in the beginning.
 
 ## Unidimensionality {.smaller}
 
-While multidimensional constructs are possible, it is outside the scope of this lecture. Most often, even unidimensional measures are not well constructed. The most common problem (imho) is residual correlations. We'll look at four ways to assess unidimensionality in a Rasch model:
+While multidimensional constructs are possible, it is outside the scope of this lecture. Most often, even unidimensional measures are not well constructed. The most common problem (in my experience) with dimensionality is residual correlations. We'll look at four ways to assess unidimensionality in a Rasch model:
 
 -   Item fit statistics (MSQ and ZSTD)
 -   PCA of residuals
@@ -1374,15 +1385,15 @@ We can check this by looking at the item characteristic curves (ICC). So far, we
 
 ### An important note on types of data {.smaller}
 
--   Ordinal data - ordered response categories with unknown distance between categories.
+-   **Ordinal data** - ordered response categories with unknown distance between categories.
 
-This is by far the most common type of data in psychology and social sciences. But it is extremely common to pretend that ordinal data is interval data, and use it as such in everything from simple calculations such as mean/SD to more complex statistical models. This is a problem [@liddell2018] and there are methods for analyzing ordinal data properly [@bürkner2019].
+This is by far the most common type of data in psychology and social sciences. But it is extremely common to pretend that ordinal data is interval data, and use it as such in everything from simple calculations such as mean/SD to more complex statistical models. This is a problem [@liddell2018] and there are methods for analyzing ordinal data properly [i.e @bürkner2019].
 
 *Adding more response categories does not make them anything else than ordinal, neither does removing the labels. Visual Analogue Scales have no strong case for being interval level either. All three methods usually add to problems with disordered response categories and invariance issues.*
 
-### Example: Flourishing Scale (FS) {.smaller}
+### Example: Flourishing Scale {.smaller}
 
-We'll use an open dataset [@didino] of the Flourishing Scale [@diener2010]. It has 8 items:
+We'll use an open dataset [@didino] for the Flourishing Scale (FS) [@diener2010]. It has 8 items:
 
 ```{r}
 itemlabels <- itemlabels_fs
@@ -1477,9 +1488,9 @@ q6_ICC <- ggplot(df.icc,
 q6_ICC + scale_color_viridis_d(option = "D", labels = str_wrap(categories,14), end = 0.97)
 ```
 
-### Disordered response categories {.smaller}
+### Disordered categories {.smaller}
 
-What we look for in this figure is response categories that at no point on the x axis has the highest probability. Visually, this means that the probability curve never goes "above" other categories. Which ones can you identify in this example?
+What we look for in this figure is response categories that at no point on the x-axis has the highest probability. Visually, this means that the problematic probability curve does not pass "above" other categories. Which ones can you identify in this example?
 
 ```{r}
 #| fig-width: 8
@@ -1490,24 +1501,25 @@ q6_ICC + scale_color_viridis_d(option = "D", labels = str_wrap(categories,14), e
 
 There are several ways to address disordered response categories in the analysis phase. The most common is to merge adjacent categories and rerun the ICC analysis to check results. However, disordered thresholds can (at least partially) be a sign of other problems, such as misfitting items, multidimensionality, or local dependence.
 
-Long term, it is important to investigate the cause and revise the questionnaire. Usually, the cause of disordered categories is related to having too many response categories, having bad or no labels on categories (only endpoints labeled is bad practice). Also, item formulation needs to meld well with the response categories.
+Long term, it is important to investigate the cause and revise the questionnaire. Usually, the cause of disordered categories is related to having too many response categories, having bad or no labels on categories (only endpoints labeled is bad practice). Also, item formulation needs to work well with the response categories.
 
 ## Invariance {.smaller}
 
 -   In essence, invariance is about the stability of item locations across subgroups. It can be explained as an interaction effect between item location and a demographic variable.
--   Invariance is important to establish for comparability between groups of interest.
--   For instance, given that two persons with same theta, belonging to different groups (i.e gender), each item should have the same response threshold probability.
+-   Invariance is important to establish to ensure that we can compare measurements between groups of interest.
+-   For instance, for two persons with same theta, belonging to different groups (i.e gender), each item should have about the same response threshold location.
+- (We can also look at other item properties, such as item fit, and how it varies across subgroups, but that is outside the scope of this lecture)
 
-### Invariance pt 2
+### Invariance pt 2 {.smaller}
 
--   We can have global tests of invariance, that check the measurement model as a whole and compare groups.
+-   We can use global tests of invariance, that assess the measurement model as a whole (all items together) and compare groups
     -   Likelihood ratio test (LRT)
--   And, more interesting, tests that examine each item separately
+-   And, usually more interesting, tests that examine each item separately
     -   Differential Item Functioning (DIF)
 -   Several types of tests are available for both
-    -   some tests can only handle two groups, some can deal with interactions between two types of groups (education level+sex) and continuous variables (age in years)
+    -   some tests can only compare two groups, some can deal with interactions between two types of groups (education level+sex) and continuous variables (age in years)
 
-### DIF example
+### DIF example (age)
 
 ```{r}
 pss7p %>% 
@@ -1516,7 +1528,7 @@ pss7p %>%
 ```
 
 ::: footer
-Item q9p: "been able to control irritations in your life?"
+Item q9p from PSS-14: "been able to control irritations in your life?"
 :::
 
 ### DIF figure item locations
@@ -1560,9 +1572,13 @@ Sorry for the Swedish example, this will be remade in English. It illustrates ho
 
 ## Reliability {.smaller}
 
-Affects statistical power to detect changes/differences in the latent trait. Reliability is a function of the number of items/item thresholds and the item locations. The more items and the more spread out the item locations are, the higher the reliability.
+Affects statistical power to detect changes/differences in the latent trait. Reliability is a function of the number of items/item thresholds and the item locations. Having more items with more thresholds (ordered response categories), and the more dispersed the item locations are (instead of overlapping), the higher the reliability.
 
-It is important to understand the reliability of the measure itself, and then how it applies to the population of interest. Since reliability is not constant across the latent variable continuum, targeting becomes a factor in determining reliability in a practical use case.
+It is important to understand the reliability *of the measure itself*, and then how it applies to the population of interest. Since reliability is not constant across the latent variable continuum, targeting becomes a factor in determining reliability in a practical use case.
+
+::: footer
+*Remember: reliability is a property of the measurement instrument, not the sample.*
+:::
 
 ### Standard error of measurement {.smaller}
 
@@ -1576,11 +1592,18 @@ p1_8_12_2 / p3_12_8_2 + plot_layout(heights = c(1, 0.6))
 
 ```{r}
 #| fig-width: 7
-RIscoreSE(pss7, output = "figure",score_range = c(-4,5)) +
+RIscoreSE(pss7, output = "figure", score_range = c(-4,5)) +
   labs(title = "Ordinal sum score vs interval score",
        subtitle = "PSS-7",
        caption = "Note: Horizontal lines show SEM * 1.96 (95% CI)") +
   theme_rise()
+```
+
+### Ordinal/interval table {.smaller .scrollable}
+When using the Rasch model, we can simply look up the ordinal sum score in a table to get the interval score and its SEM value.
+```{r}
+RIscoreSE(pss7, output = "dataframe", score_range = c(-4,5)) %>% 
+  kable()
 ```
 
 ### SEM figure 2
@@ -1659,30 +1682,32 @@ p1f / p2f / p3f + plot_layout(heights = c(1, 1, 1.5))
 
 ```
 
+::: footer
+The location of the respondent in the previous slide is shown using a dashed vertical line. Note the lack of item thresholds in that area.
+:::
+
 ::: notes
 Not many item thresholds in the location of the respondent, which means that the estimated theta has larger uncertainty than at other parts of the scale where more thresholds are spread out.
 :::
 
 ## Wrapping up {.smaller}
 
--   We have covered a lot of material today!
+-   We have covered a lot today!
 -   Most of it you are not expected to remember (few know these things)
 -   You will be expected to know basic terms and concepts
 -   You now know that these methods and tools exist and where to find them
-    -   I have created an R package for Rasch analysis: [RISEkbmRasch](https://pgmj.github.io/raschrvignette/RaschRvign.html)
+    -   A sample Rasch analysis with code and data: [RISEkbmRasch vignette](https://pgmj.github.io/raschrvignette/RaschRvign.html)
 
 ## Classical vs modern test theory {.smaller}
 
-Major differences:
-
 -   CTT does not include analysis of item location/difficulty, which is a key aspect of IRT
--   CTT assumes that reliability is constant across the continuum
-    -   assumes equal reliability for all respondents
+-   CTT assumes that reliability is constant across the continuum (and equal for all respondents)
 -   CTT has no analysis of monotonicity/ordering of response categories
 -   IRT enables the analysis of items and persons on the same (interval level) scale
+- IRT produces model fit metrics for both items and persons
 -   IRT enables estimation of latent variable scores on an interval scale
 -   Only Rasch models can justify ordinal sum scores as a sufficient metric to represent measurement on the latent construct scale
-    -   Also... Rasch is a special case, see [@andrich2004; @kyngdon2008].
+    -   Also, Rasch is a special case... [see @andrich2004; @kyngdon2008].
 
 ::: footer
 CTT = factor analysis, principal component analysis, etc; Modern test theory = IRT, Rasch, Mokken, etc
@@ -1701,7 +1726,7 @@ No psychometric/statistical method is "safe" from misuse. Some common mistakes t
 
 -   One can share a fully documented report file as an appendix document with the manuscript/paper/preprint
 -   Very helpful for oneself as a traceable record of the analysis process
--   collect code and comments in one place with R and \<quarto.org\>
+-   collect code and comments in one place with R and [Quarto](https://quarto.org/)
 -   This is a good way to share the analysis and make it reproducible
 -   Makes it easier for others to learn about (and critique) the analysis
 -   Helpful during the review process
@@ -1712,12 +1737,6 @@ No psychometric/statistical method is "safe" from misuse. Some common mistakes t
 ## Bayesian IRT
 
 There are guides and tools available for doing Bayesian IRT in R as well. The `brms` package is highly recommended [@bürkner2017; @bürkner2021] and this excellent blog post: <https://solomonkurz.netlify.app/blog/2021-12-29-notes-on-the-bayesian-cumulative-probit/>
-
-### Measurement uncertainty
-
-All measurements have some degree of error/uncertainty.
-
-Even measuring concrete and directly accessible things like the weight of an object, there is ALWAYS a margin of error in the measurement.
 
 ## R packages used
 

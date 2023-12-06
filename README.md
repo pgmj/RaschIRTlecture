@@ -4,7 +4,12 @@ This is a repository with lecture slides and code for a lecture given at Uppsala
 
 The slides are made with [Quarto](https://www.quarto.org) and can be viewed on GitHub Pages at: <https://pgmj.github.io/RaschIRTlecture/slides.html>
 
+More materials on Rasch analysis in R can be found in the vignette for my [R package RISEkbmRasch](https://github.com/pgmj/RISEkbmRasch):
+<https://pgmj.github.io/raschrvignette/RaschRvign.html>
+
 If you want to use this material as a teacher you can [clone the repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) and use the file `RaschIRTlecture-speaker.html` [file in the root directory](https://github.com/pgmj/RaschIRTlecture/blob/main/RaschIRTlecture-speaker.html) to present. The "-speaker" file uses the multiplex function in Quarto, which makes students (that view the slides using the previous link/file) follow along when you change slide.
+
+The speaker view has a "notes" section that you can use to read the lecture notes. You can also find these in the source code (the .qmd file) by searching for "footer".
 
 ## Author
 
