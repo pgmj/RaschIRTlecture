@@ -1196,6 +1196,8 @@ We could put any set of items into a Rasch model and just look at ICC curves and
 
 So let's put the Rasch model to use in context of the five psychometric criteria mentioned in the beginning.
 
+If desired, you will find a more detailed description of analyses and metrics in the preprint on psychometric criteria [@johansson].
+
 ## Unidimensionality {.smaller}
 
 While multidimensional constructs are possible, it is outside the scope of this lecture. Most often, even unidimensional measures are not well constructed. The most common problem (in my experience) with dimensionality is residual correlations. We'll look at four ways to assess unidimensionality in a Rasch model:
@@ -1209,7 +1211,7 @@ While multidimensional constructs are possible, it is outside the scope of this 
 
 We'll use the same published dataset and paper analyzing the PSS-14 scale as before [@rozental2023] as an example for dimensionality analysis.
 
-We use multiple tests since there is no single test to establish unidimensionality. This is also true for CTT analysis.
+We use multiple methods to analyze dimensionality since there is no single method that allows one to assess unidimensionality properly. This is also true for CTT analysis.
 
 **Does everyone know what residuals are?**
 
