@@ -118,7 +118,7 @@ pss7 <- pss14 %>%
 
 ## About me {.smaller}
 
--   Lic. psychologist (Uppsala) & PhD behavior analysis (Oslo)
+-   Lic. psychologist (Uppsala) & PhD behavior analysis (Oslo, [thesis](https://osf.io/preprints/thesiscommons/mtyh4))
 -   Scientist at [RISE Research Institutes of Sweden](https://www.ri.se/en/what-we-do/expertises/category-based-measurements)
     -   Department of Measurement Science and Technology
 -   Background:
