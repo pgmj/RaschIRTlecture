@@ -1,5 +1,7 @@
 # Introduction to Item Response Theory and Rasch Measurement Theory
 
+[![DOI](https://zenodo.org/badge/724146949.svg)](https://zenodo.org/doi/10.5281/zenodo.10276564)
+
 This is a repository with lecture slides and code for a lecture given at Uppsala University in November of 2023.
 
 The slides are made with [Quarto](https://www.quarto.org) and can be viewed on GitHub Pages at: <https://pgmj.github.io/RaschIRTlecture/slides.html>
