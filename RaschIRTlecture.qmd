@@ -1642,14 +1642,18 @@ ordinal_interval %>%
 
 ```
 
-### TIF and SEM
+### TIF and SEM {.smaller}
 
-The Test Information Function [@samejima1969; @samejima1994] is basically the inverse of the standard error of measurement. It shows the precision of the measurement instrument across the continuum.
+The Test Information Function [@samejima1969; @samejima1994] is basically the inverse of the standard error of measurement. It shows the precision of the measurement instrument across the latent continuum.
 
 ```{r}
 #| fig-width: 7
 RItif(pss7)
 ```
+
+::: footer 
+Note. The lower red line shows TIF 3.33, which corresponds to SEM = 0.54 and PSI = 0.7.
+:::
 
 ### SEM by item
 
