@@ -318,11 +318,12 @@ The point on the x-axis where the y-axis = 0.5 is the **item difficulty (aka ite
 
 ### A note on terminology {.smaller}
 
-By tradition in Rasch/IRT terminology, the term "difficulty" is used to describe the item location on the latent dimension/variable/continuum and "ability" is used to describe the person location on the latent dimension/variable/continuum.
+- By tradition in Rasch/IRT terminology, the term "difficulty" is used to describe the item location on the latent dimension/variable/continuum and "ability" is used to describe the person location on the latent dimension/variable/continuum.
 
-Ability and difficulty are intuitive when describing ability tests, but may be confusing when looking at other types of latent constructs, such as depression or well-being.
+- Ability and difficulty are intuitive when describing ability tests, but may be confusing when looking at other types of latent constructs, such as depression or well-being.
 
-A more generic term is the "location" of items and persons on the latent variable. We will move towards using that more consistently in this lecture, but there will be some variation in terminology (sorry!).
+- A more generic term is the "location" of items and persons on the latent variable. We will move towards using that more consistently in this lecture, but there will be some variation in terminology (sorry!). 
+    - Hopefully, this inconsistency on my part will make it easier to read other materials that use different terms for the same concepts.
 
 ### Item difficulty pt 2 {.smaller}
 
@@ -357,11 +358,11 @@ plotPImap(rasch, sorted = TRUE)
 
 ### A note on scaling {.smaller}
 
-IRT/Rasch uses the logit scale, which is an interval scale, for both items and persons. This means that the distance between two points on the scale is the same, regardless of where on the scale you are. Great for statistical analysis!
+- IRT/Rasch uses the logit scale, which is an interval scale, for both items and persons. This means that the distance between two points on the scale is the same, regardless of where on the scale you are. Great for statistical analysis!
 
-However, the values on the logit scale have no inherent meaning or external reference point. **This is why we need to look at the item difficulty and person ability in relation to each other.** Do not conflate the zero point on the logit scale with something like 0 on a Z-score scale.
+- However, the values on the logit scale have no inherent meaning or external reference point. **This is why we need to look at the item difficulty and person ability in relation to each other.** Do not conflate the zero point on the logit scale with something like 0 on a Z-score scale.
 
-You can also not interpret a person location as good or bad, or high or low, without looking at it in the context of more person locations. A person with a location of 0 is not necessarily "average", "normal", or "healthy" (or anything else). It is just a location on the latent variable.
+- You can also not interpret a person location as good or bad, or high or low, without looking at it in the context of more person locations. A person with a location of 0 is not necessarily "average", "normal", or "healthy" (or anything else). It is just a location on the latent variable.
 
 ### Targeting {.smaller}
 
@@ -506,7 +507,6 @@ Since items and persons are on the same scale, we can infer a person's item resp
 #| fig-height: 8
 p1 / p2 / p3 + plot_layout(heights = c(1, 1, 1.4))
 ```
-
 :::
 :::
 
@@ -530,7 +530,7 @@ Let's return to the items you created before.
 
 ### Other IRT models {.smaller}
 
-The 2PL and 3PL models are also commonly used. The 2PL model adds a second parameter,  item discrimination, which describes how well the item separates between persons with high and low ability.
+The 2PL and 3PL models are also commonly used. The 2PL model adds a second parameter, item discrimination, which describes how well the item separates between persons with high and low ability.
 
 ```{r}
 #| echo: true
@@ -561,13 +561,13 @@ mirt(rasch_data, 1, itemtype = "3PL", verbose = FALSE) %>% plot(type="trace", fa
 Can you guess what the third parameter is?
 
 ::: incremental
-- The guessing parameter! It describes how likely it is that a person will provide a correct answer to an item located above their ability. Useful in multiple choice questions, for instance.
+-   The guessing parameter! It describes how likely it is that a person will provide a correct answer to an item located above their ability. Useful in multiple choice questions, for instance.
 :::
 
 ### CTT and IRT - similarities
 
-- Classical Test Theory (CTT) includes a range of methods, most often some form of factor analysis
-    - There is a slide at the end of this presentation about differences between CTT and IRT
+-   Classical Test Theory (CTT) includes a range of methods, most often some form of factor analysis
+    -   There is a slide at the end of this presentation about differences between CTT and IRT
 -   Item threshold locations are similar to item intercepts in CTT
 -   Item discrimination is similar to factor loadings in CTT
 
@@ -692,9 +692,9 @@ A polytomous item has multiple thresholds, located where the probability curves 
 
 ### Guesstimating theta {.smaller}
 
-Recall $\theta$ (person location)? 
+Recall $\theta$ (person location)?
 
-- Let's say a person responds "Often" to this item, in which range is it most likely that their theta is?
+-   Let's say a person responds "Often" to this item, in which range is it most likely that their theta is?
 
 ```{r}
 q12nICC + scale_color_viridis_d(option = "D", labels = categories, end = 0.97) +
@@ -1184,9 +1184,9 @@ RItif(pss7) + theme_rise()
 
 ## Summing up polytomous models {.smaller}
 
-We have been using the Partial Credit Model with Conditional Maximum Likelihood estimation, using the `eRm` package for R. 
+We have been using the Partial Credit Model with Conditional Maximum Likelihood estimation, using the `eRm` package for R.
 
-When analyzing polytomous data with Rasch/IRT models, the lowest response category is always set to 0, as it reflects on the number of thresholds "passed" by the respondent. 
+When analyzing polytomous data with Rasch/IRT models, the lowest response category is always set to 0, as it reflects on the number of thresholds "passed" by the respondent.
 
 Think of this related to the dichotomous mode, where 0 and 1 are the only scores available and the sum score is just a count of the number of items with correct responses. In the polytomous case, the sum score is a count of the number of thresholds passed per item, summed together.
 
@@ -1510,7 +1510,7 @@ Long term, it is important to investigate the cause and revise the questionnaire
 -   In essence, invariance is about the stability of item locations across subgroups. It can be explained as an interaction effect between item location and a demographic variable.
 -   Invariance is important to establish to ensure that we can compare measurements between groups of interest.
 -   For instance, for two persons with same theta, belonging to different groups (i.e gender), each item should have about the same response threshold location.
-- (We can also look at other item properties, such as item fit, and how it varies across subgroups, but that is outside the scope of this lecture)
+-   (We can also look at other item properties, such as item fit, and how it varies across subgroups, but that is outside the scope of this lecture)
 
 ### Invariance pt 2 {.smaller}
 
@@ -1520,6 +1520,12 @@ Long term, it is important to investigate the cause and revise the questionnaire
     -   Differential Item Functioning (DIF)
 -   Several types of tests are available for both
     -   some tests can only compare two groups, some can deal with interactions between two types of groups (education level+sex) and continuous variables (age in years)
+
+### Invariance pt 3 {.smaller}
+
+A preprint reviewing invariance tests in published research [@durso] concluded that:
+
+> \(1\) 4% of the 918 scales underwent MI testing across groups or time and that these tests were generally poorly reported, (2) none of the reported MI tests could be successfully reproduced, and (3) of 161 newly performed MI tests, a mere 46 (29%) reached sufficient MI (scalar invariance), and MI often failed completely (89; 55%). Thus, MI tests were rarely done and poorly reported in psychological studies, and the frequent violations of MI indicate that reported group differences cannot be solely attributed to group differences in the latent constructs.
 
 ### DIF example (age)
 
@@ -1574,17 +1580,20 @@ Sorry for the Swedish example, this will be remade in English. It illustrates ho
 
 ## Reliability {.smaller}
 
-Affects statistical power to detect changes/differences in the latent trait. Reliability is a function of the number of items/item thresholds and the item locations. Having more items with more thresholds (ordered response categories), and the more dispersed the item locations are (instead of overlapping), the higher the reliability.
+- Affects statistical power to detect changes/differences in the latent trait. Reliability is a function of the number of items/item thresholds and the item locations. Having more items with more thresholds (ordered response categories), and the more dispersed the item locations are (instead of overlapping), the higher the reliability.
 
-It is important to understand the reliability *of the measure itself*, and then how it applies to the population of interest. Since reliability is not constant across the latent variable continuum, targeting becomes a factor in determining reliability in a practical use case.
+- It is important to understand the reliability *of the measure itself*, and then how it applies to the population of interest. Since reliability is not constant across the latent variable continuum, targeting becomes a factor in determining reliability in a practical use case.
+
+- In IRT/Rasch, the Person Separation Index (PSI) is sometimes used, as it is comparable to the ubiquitous Cronbach's alpha in having a 0-1 range. However, the PSI represents the sample SEM, not the test (see `?RItif`). 
+    - Also, it is misleading to present a point estimate for reliability, since it is not constant across the latent variable continuum.
 
 ::: footer
-*Remember: reliability is a property of the measurement instrument, not the sample.*
+*Remember: in psychometrics, reliability is a property of the measurement instrument, not the sample.*
 :::
 
 ### Standard error of measurement {.smaller}
 
-Recall this figure? The horizontal lines around the diamond shapes get smaller and smaller for each item we add.
+Recall this figure? The horizontal lines (SEM) around the diamond shapes (estimated theta values) become shorter for each item we add.
 
 ```{r}
 p1_8_12_2 / p3_12_8_2 + plot_layout(heights = c(1, 0.6))
@@ -1602,7 +1611,9 @@ RIscoreSE(pss7, output = "figure", score_range = c(-4,5)) +
 ```
 
 ### Ordinal/interval table {.smaller .scrollable}
+
 When using the Rasch model, we can simply look up the ordinal sum score in a table to get the interval score and its SEM value.
+
 ```{r}
 RIscoreSE(pss7, output = "dataframe", score_range = c(-4,5)) %>% 
   kable()
@@ -1629,6 +1640,15 @@ ordinal_interval %>%
   scale_y_continuous(limits = c(0,1.5), breaks = seq(0,1.5,0.1)) +
   labs(x = "Logit score", y = "Logit standard error")
 
+```
+
+### TIF and SEM
+
+The Test Information Function [@samejima1969; @samejima1994] is basically the inverse of the standard error of measurement. It shows the precision of the measurement instrument across the continuum.
+
+```{r}
+#| fig-width: 7
+RItif(pss7)
 ```
 
 ### SEM by item
@@ -1706,7 +1726,7 @@ Not many item thresholds in the location of the respondent, which means that the
 -   CTT assumes that reliability is constant across the continuum (and equal for all respondents)
 -   CTT has no analysis of monotonicity/ordering of response categories
 -   IRT enables the analysis of items and persons on the same (interval level) scale
-- IRT produces model fit metrics for both items and persons
+-   IRT produces model fit metrics for both items and persons
 -   IRT enables estimation of latent variable scores on an interval scale
 -   Only Rasch models can justify ordinal sum scores as a sufficient metric to represent measurement on the latent construct scale
     -   Also, Rasch is a special case... [see @andrich2004; @kyngdon2008].
