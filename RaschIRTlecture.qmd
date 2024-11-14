@@ -3,7 +3,6 @@ title: "Item Response Theory and Rasch Measurement Theory"
 subtitle: "An introduction to modern test theory"
 title-block-banner: "#870052"
 title-block-banner-color: "#FFFFFF"
-
 author: 
   name: Magnus Johansson, PhD
   affiliation: RISE Research Institutes of Sweden
@@ -11,7 +10,6 @@ author:
   orcid: 0000-0003-1669-592X
 date: last-modified
 date-format: iso
-
 format: 
   revealjs:
     theme: [night, custom.scss]
@@ -26,7 +24,6 @@ format:
     reference-location: document
     code-overflow: wrap
     code-link: true
-
 execute:
   echo: false
   warning: false
@@ -43,7 +40,8 @@ bibliography:
 library(tidyverse)
 library(lavaan)
 library(lavaanPlot)
-library(RISEkbmRasch)
+library(easyRasch)
+library(iarm)
 library(eRm)
 library(patchwork)
 library(mirt)
@@ -54,22 +52,26 @@ library(qrcode)
 
 qr_slides <- qr_code("https://pgmj.github.io/RaschIRTlecture/slides.html")
 
-
 psychometric_criteria <- data.frame(
   stringsAsFactors = FALSE,
   Criterion = c(
-    "Unidimensionality", "Ordered response categories",
+    "Unidimensionality & local independence", "Ordered response categories",
     "Invariance",
     "Targeting", "Reliability"
   ),
   Description = c(
     "Items represent one latent variable, without strongly correlated item residuals ('local independence'). Principal Component Analysis and Exploratory Factor Analysis of raw data are explorative methods.",
     "A higher person location (sum score) on the latent variable should entail an increased probability of a higher response (category) for all items and vice versa. Sometimes referred to as 'monotonicity'.",
-    "Item and measure properties are consistent between relevant demographic groups (gender, age, ethnicity, time, etc). Test-retest correlation is not an invariance test since it does not provide information about item properties.",
+    "Item and measure properties are consistent between relevant demographic groups (gender, age, ethnicity, time, etc). Test-retest correlation is not an invariance test unless it is used to assess item properties (not person scores).",
     "Item (threshold) locations compared to person locations should be well matched and not show ceiling or floor effects, or large gaps.",
     "Sufficient reliability for the expected properties of the target population and intended use of results. Reliability is contingent upon the other criteria being fulfilled and should not be reported for scales with inadequate properties."
   )
 )
+
+# simulated dichotomous data
+rasch_data <- raschdat1 %>% 
+  select(I1:I9) %>% 
+  rename_with(~str_replace(., "I", "q"))
 
 # Flourishing Scale
 itemlabels_fs <- read_excel("data/itemlabels_SWLS_FS.xlsx", sheet = 3)
@@ -118,14 +120,14 @@ pss7 <- pss14 %>%
 
 ## About me {.smaller}
 
--   Lic. psychologist (Uppsala) & PhD behavior analysis (Oslo, [thesis](https://osf.io/preprints/thesiscommons/mtyh4))
--   Scientist at [RISE Research Institutes of Sweden](https://www.ri.se/en/what-we-do/expertises/category-based-measurements)
-    -   Department of Measurement Science and Technology
+-   Lic. psychologist (Uppsala) & PhD behavior analysis (Oslo)
+-   Scientist at [RISE Research Institutes of Sweden](https://www.ri.se/en/shic)
+    -   ORCID: <https://orcid.org/0000-0003-1669-592X>
 -   Background:
     -   CEO in private care
     -   10 years consulting; OBM, leadership/groups/organizations, sustainability, etc.
     -   Swedish pilot trial of the PAX Good Behavior Game (universal prevention in elementary school)
-    -   Very interested in prevention and measurement :)
+    -   Prevention and measurement
 
 ### Useful links
 
@@ -144,7 +146,7 @@ plot(qr_slides)
 We want to measure something that is not directly accessible by using one or more proxy indicators.
 
 -   in psychology - tests and questionnaires
-    -   almost always ordered categorical data
+    -   almost always ordered categorical data (ordinal)
 -   tests of ability/IQ/etc, often consisting of subtests or multiple items
     -   type of data: correct/incorrect response; response time
 -   questionnaires to measure depression, wellbeing, anxiety, loneliness, etc
@@ -264,10 +266,6 @@ Let's dive into Item Response Theory and Rasch Measurement Theory!
 -   This is the structure of the dataset (items = columns):
 
 ```{r}
-rasch_data <- raschdat1 %>% 
-  select(I1:I9) %>% 
-  rename_with(~str_replace(., "I", "q"))
-
 rasch_data %>% 
   slice(1:5) %>% 
   kable()
@@ -1177,9 +1175,20 @@ Especially when creating a measure, researchers should have hypotheses about the
 -   The same goes for test-retest as a reliability test, it should be used to assess stability in item properties over time, not sample properties.
 
 ```{r}
-#| echo: true
+#| echo: false
 #| fig-width: 6
+#| layout-ncol: 2
 RItif(pss7) + theme_rise()
+RIscoreSE(pss7, output = "dataframe") %>% 
+  janitor::clean_names() %>% 
+  slice(2:28) %>% 
+  ggplot(aes(x = logit_score, y = logit_std_error)) +
+    geom_point(size = 2) +
+    geom_line(group = 1) +
+  theme_rise() +
+  labs(title = "Distribution of measurement uncertainty",
+       x = "Latent score (theta) in logits",
+       y = "Standard error of measurement (logits)")
 ```
 
 ## Summing up polytomous models {.smaller}
@@ -1202,138 +1211,33 @@ If desired, you will find a more detailed description of analyses and metrics in
 
 While multidimensional constructs are possible, it is outside the scope of this lecture. Most often, even unidimensional measures are not well constructed. The most common problem (in my experience) with dimensionality is residual correlations. We'll look at four ways to assess unidimensionality in a Rasch model:
 
--   Item fit statistics (MSQ and ZSTD)
--   PCA of residuals
+-   Conditional item fit statistics
+-   Residual correlation matrix
 -   Plot of factor loadings on the first residual contrast
--   Residual correlation matrix for all items
+-   PCA of residuals
 
 ### PSS-14 example {.smaller}
 
 We'll use the same published dataset and paper analyzing the PSS-14 scale as before [@rozental2023] as an example for dimensionality analysis.
 
-We use multiple methods to analyze dimensionality since there is no single method that allows one to assess unidimensionality properly. This is also true for CTT analysis.
+We use multiple methods to analyze dimensionality since there is no single method that allows one to assess unidimensionality properly. This is also true for factor analysis.
 
 **Does everyone know what residuals are?**
 
-### Unidimensionality - Item fit {.smaller background-color="#ffffff"}
-
-::: columns
-::: {.column width="50%"}
-"Outfit" refers to item fit when person location is far from the item location, while "infit" refers to when person and item locations are close together. MSQ should be close to 1, with lower and upper cutoffs often set to 0.7 and 1.3, while ZSTD should be around 0, with cutoffs set to +/- 1.96. Infit is usually more important. Low fit indicates a better than expected fit to the Rasch model but can inflate reliability without adding much information. High fit often reflects multidimensionality.
-:::
-
-::: {.column width="50%"}
-```{r}
-# this is an updated function from the RISEkbmRasch package, soon available on GitHub, that allows to export results to a dataframe, which enables creating a table that fits the slide better
-RIitemfitPCM2m <- function(dfin, samplesize = 300, nsamples = 10, cpu = 4,
-                          zstd_min = -2, zstd_max = 2, msq_min = 0.7,
-                          msq_max = 1.3, fontsize = 15, fontfamily = "Lato",
-                          table = TRUE) {
-  library(doParallel)
-  registerDoParallel(cores = cpu)
-  df.erm <- PCM(dfin) # run PCM model
-  # get estimates, code borrowed from https://bookdown.org/chua/new_rasch_demo2/PC-model.html
-  person.locations.estimate <- person.parameter(df.erm)
-  item.fit <- eRm::itemfit(person.locations.estimate)
-
-  # ZSTD multisample
-  outfitZ <- c()
-  infitZ <- c()
-
-  infitZ <- foreach(icount(nsamples), .combine = cbind) %dopar% {
-    library(eRm)
-    df.new <- dfin[sample(1:nrow(dfin), samplesize), ]
-    df.new <- na.omit(df.new)
-    df.z <- PCM(df.new)
-    ple <- person.parameter(df.z)
-    item.fit.z <- eRm::itemfit(ple)
-    item.fit.z$i.infitZ
-  }
-
-  outfitZ <- foreach(icount(nsamples), .combine = cbind) %dopar% {
-    library(eRm)
-    df.new <- dfin[sample(1:nrow(dfin), samplesize), ]
-    df.new <- na.omit(df.new)
-    df.z <- PCM(df.new)
-    ple <- person.parameter(df.z)
-    item.fit.z <- eRm::itemfit(ple)
-    item.fit.z$i.outfitZ
-  }
-
-  item.fit.table <- as.data.frame(cbind(item.fit$i.outfitMSQ,
-                                        item.fit$i.infitMSQ,
-                                        rowMeans(outfitZ),
-                                        rowMeans(infitZ))) %>%
-    mutate(across(where(is.numeric), ~ round(.x, 3)))
-
-  colnames(item.fit.table) <- c("OutfitMSQ", "InfitMSQ", "OutfitZSTD", "InfitZSTD")
-
-  if (table == TRUE) {
-  # create table that highlights cutoff values in red
-  item.fit.table %>%
-    mutate(OutfitZSTD = cell_spec(OutfitZSTD, color = ifelse(OutfitZSTD < zstd_min, "red",
-      ifelse(OutfitZSTD > zstd_max, "red", "black")
-    ))) %>%
-    mutate(InfitZSTD = cell_spec(InfitZSTD, color = ifelse(InfitZSTD < zstd_min, "red",
-      ifelse(InfitZSTD > zstd_max, "red", "black")
-    ))) %>%
-    mutate(OutfitMSQ = cell_spec(OutfitMSQ, color = ifelse(OutfitMSQ < msq_min, "red",
-      ifelse(OutfitMSQ > msq_max, "red", "black")
-    ))) %>%
-    mutate(InfitMSQ = cell_spec(InfitMSQ, color = ifelse(InfitMSQ < msq_min, "red",
-      ifelse(InfitMSQ > msq_max, "red", "black")
-    ))) %>%
-    kbl(booktabs = T, escape = F) %>%
-    # bootstrap options are for HTML output
-    kable_styling(
-      bootstrap_options = c("striped", "hover"),
-      position = "left",
-      full_width = F,
-      font_size = fontsize,
-      fixed_thead = T
-    ) %>%
-    column_spec(1, bold = T) %>%
-    row_spec(0, bold = T) %>%
-    kable_classic(html_font = fontfamily) %>%
-    # latex_options are for PDF output
-    kable_styling(latex_options = c("striped", "scale_down"))
-  } else {
-    itemFitPCM <<- item.fit.table
-  }
-}
-RIitemfitPCM2m(pss14, 250, 12, 8, table = FALSE)
-
-zstd_min = -2
-zstd_max = 2
-msq_min = 0.7
-msq_max = 1.3
-```
-
-```{r}
-# itemFitPCM %>% 
-#   kable()
-RIitemfitPCM2(pss14, 250, 12, 8)
-
-```
-:::
-:::
-
 ### PCA of residuals {.smaller}
 
-The highest eigenvalue should be below 2.0
+The highest eigenvalue should be below 2.0 (closer to 1.5)
 
 ```{r}
 # from function RISEkbmRasch::RIpcmPCA(na.omit(pss14))
-dfin <- na.omit(pss14)
-df.erm <- PCM(dfin)
-item.estimates <- eRm::thresholds(df.erm)
-item_difficulty <- item.estimates[["threshtable"]][["1"]]
-item_difficulty <- as.data.frame(item_difficulty)
-item.se <- item.estimates$se.thresh
-person.locations.estimate <- person.parameter(df.erm)
-item.fit <- eRm::itemfit(person.locations.estimate)
+item.fit <- pss14 %>% 
+  na.omit() %>% 
+  PCM() %>% 
+  person.parameter() %>% 
+  eRm::itemfit()
+
 std.resids <- item.fit$st.res
-pca <- pca(std.resids, nfactors = ncol(dfin), rotate = "oblimin")
+pca <- pca(std.resids, nfactors = 5, rotate = "oblimin")
 eigenv <- pca$values %>% round(2) %>% head(5)
 kable(eigenv, col.names = "Eigenvalue")
 ```
@@ -1341,7 +1245,7 @@ kable(eigenv, col.names = "Eigenvalue")
 ### Loadings on 1st contrast {.smaller background-color="#ffffff"}
 
 ```{r}
-RIloadLoc(pss14) + coord_cartesian(ylim = c(-0.75, 1.25), xlim = c(-0.5, 0.5))
+RIloadLoc(pss14) + coord_cartesian(ylim = c(-0.8, 1.25), xlim = c(-0.5, 0.5))
 ```
 
 We clearly have two clusters of items. Can you spot the pattern?
@@ -1350,13 +1254,14 @@ We clearly have two clusters of items. Can you spot the pattern?
 
 ::: columns
 ::: {.column width="30%"}
-It is the relative correlation between items that is important, not the absolute value. The residual correlations should not be above 0.2 above the mean correlation of all item pairs [@christensen2017].
+It is the relative correlation between items that is important, not the absolute value [@christensen2017]. Similarly to item fit, we need bootstrapping/simulation to determine cutoff values to interpret the results.
 :::
 
 ::: {.column width="70%"}
 ```{r}
 #| fig-width: 5
-RIresidcorr(pss14, cutoff = 0.2)
+simcor <- RIgetResidCor(pss14, 200, 8)
+RIresidcorr(pss14, cutoff = simcor$p99)
 ```
 :::
 :::
@@ -1365,19 +1270,56 @@ RIresidcorr(pss14, cutoff = 0.2)
 
 ::: columns
 ::: {.column width="40%"}
-This better illustrates the issue of items being too similar, often referred to as 'local dependence'.
+This better illustrates the issue of items being too similar, often referred to as 'local dependence'. Items 1 & 3, and 6 & 8 show the highest levels.
 
 ```{r}
-kbl_rise(itemlabels_fs)
+itemlabels_fs %>% 
+  mutate(itemnr = gsub("flourish","",itemnr)) %>% 
+  kbl_rise()
 ```
 :::
 
 ::: {.column width="60%"}
 ```{r}
-RIresidcorr(fs_data, 0.2)
+simcor2 <- RIgetResidCor(fs_data, 200, 8)
+RIresidcorr(fs_data, cutoff = simcor2$p99)
 ```
 :::
 :::
+
+### Addressing dimensionality issues
+
+We could easily spot the two dimensions in data just by reviewing the patterns in residuals. In a real analysis situation, I would also have looked at item fit and other things before taking action, but to get to a more manageable number of items for this example we will separate the PSS-14 into negative and positive items and focus on the positive ones when investigating item fit next.
+
+### Unidimensionality - Item fit {.smaller background-color="#ffffff"}
+
+::: columns
+::: {.column width="50%"}
+"Outfit" = unweighted mean squared standardized residuals, while "infit" is an information weighted mean square, less sensitive to outliers. Low item fit indicates a better than expected fit to the Rasch model but can inflate reliability without adding much information. High item fit indicates misfit to the Rasch model. Values should be close to 1. The distribution of fit values is unknown and we need bootstrapping/simulation to determine appropriate cutoff scores for our particular set of items and persons.
+:::
+
+::: {.column width="50%"}
+```{r}
+RIitemfit(pss7)
+```
+:::
+:::
+
+#### Item fit visualized {.smaller}
+
+Here we see results of simulating datasets that fit the Rasch model perfectly, mimicking our data with 7 items (each with 5 response categories) and 793 respondents (and their thetas).
+
+```{r}
+simfit <- RIgetfit(pss7p, 250, 8)
+RIgetfitPlot(simfit, pss7p)
+```
+
+#### Loadings on 1st residual contrast
+
+```{r}
+RIloadLoc(pss7p)
+```
+
 
 ## Ordered response categories {.smaller}
 
@@ -1530,8 +1472,10 @@ A preprint reviewing invariance tests in published research [@durso] concluded t
 ### DIF example (age)
 
 ```{r}
+#| fig-width: 4
+#| layout-ncol: 2
 pss7p %>% 
-  mutate(q4p = recode(q4p,"1=0;2=1;3=2;4=3")) %>%
+  mutate(q4p = car::recode(q4p,"1=0;2=1;3=2;4=3")) %>%
   RIdifTable(pss7p_dif_age)
 ```
 
@@ -1573,8 +1517,8 @@ Sorry for the Swedish example, this will be remade in English. It illustrates ho
 ### DIF comments {.smaller}
 
 -   Important and complex topic
--   The practical effects of DIF found are affected both by the total number of items and the size of the DIF
--   Large sample sizes will indicate statistically significant DIF, but DIF size is the key metric
+-   The practical effects of DIF found are affected both by the total number of items and the magnitude of the DIF
+-   Large sample sizes will indicate statistically significant DIF, but DIF magnitude is the key metric
 -   How to deal with problematic DIF is outside the scope of this lecture
 -   For more examples and details on DIF, see: [@andrich2012; @andrich2015; @hagquist2019; @hagquist2017]
 
@@ -1585,11 +1529,8 @@ Sorry for the Swedish example, this will be remade in English. It illustrates ho
 - It is important to understand the reliability *of the measure itself*, and then how it applies to the population of interest. Since reliability is not constant across the latent variable continuum, targeting becomes a factor in determining reliability in a practical use case.
 
 - In IRT/Rasch, the Person Separation Index (PSI) is sometimes used, as it is comparable to the ubiquitous Cronbach's alpha in having a 0-1 range. However, the PSI represents the sample SEM, not the test (see `?RItif`). 
-    - Also, it is misleading to present a point estimate for reliability, since it is not constant across the latent variable continuum.
+    - Presenting the sample reliability is relevant for subsequent statistical analyses, just remember that it is not necessarily representative of the reliability of the test itself.
 
-::: footer
-*Remember: in psychometrics, reliability is a property of the measurement instrument, not the sample.*
-:::
 
 ### Standard error of measurement {.smaller}
 
@@ -1603,7 +1544,7 @@ p1_8_12_2 / p3_12_8_2 + plot_layout(heights = c(1, 0.6))
 
 ```{r}
 #| fig-width: 7
-RIscoreSE(pss7, output = "figure", score_range = c(-4,5)) +
+RIscoreSE(pss7, output = "figure") +
   labs(title = "Ordinal sum score vs interval score",
        subtitle = "PSS-7",
        caption = "Note: Horizontal lines show SEM * 1.96 (95% CI)") +
@@ -1615,7 +1556,7 @@ RIscoreSE(pss7, output = "figure", score_range = c(-4,5)) +
 When using the Rasch model, we can simply look up the ordinal sum score in a table to get the interval score and its SEM value.
 
 ```{r}
-RIscoreSE(pss7, output = "dataframe", score_range = c(-4,5)) %>% 
+RIscoreSE(pss7, output = "dataframe") %>% 
   kable()
 ```
 
@@ -1623,10 +1564,11 @@ RIscoreSE(pss7, output = "dataframe", score_range = c(-4,5)) %>%
 
 ```{r}
 #| fig-width: 7
-ordinal_interval <- RIscoreSE(pss7, output = "dataframe", score_range = c(-4,5)) %>% 
+ordinal_interval <- RIscoreSE(pss7, output = "dataframe") %>% 
   janitor::clean_names()
 
 ordinal_interval %>% 
+  slice(2:28) %>% 
   ggplot(aes(x = logit_score, y = logit_std_error)) +
   geom_point() +
   geom_line() +
@@ -1637,14 +1579,14 @@ ordinal_interval %>%
        subtitle = "PSS-7 negative items",
        caption = "Note: Horizontal dashed lines show SEM = 0.54 (PSI = 0.7), SEM = 0.45 (PSI 0.8), and SEM = 0.32 (PSI 0.9)") +
   theme_rise() +
-  scale_y_continuous(limits = c(0,1.5), breaks = seq(0,1.5,0.1)) +
+  #scale_y_continuous(limits = c(0,1.5), breaks = seq(0,1.5,0.1)) +
   labs(x = "Logit score", y = "Logit standard error")
 
 ```
 
 ### TIF and SEM {.smaller}
 
-The Test Information Function [@samejima1969; @samejima1994] is basically the inverse of the standard error of measurement. It shows the precision of the measurement instrument across the latent continuum.
+The Test Information Function [@samejima1969; @samejima1994] is basically the inverse of the standard error of measurement.
 
 ```{r}
 #| fig-width: 7
@@ -1744,7 +1686,7 @@ CTT = factor analysis, principal component analysis, etc; Modern test theory = I
 No psychometric/statistical method is "safe" from misuse. Some common mistakes to look for in papers:
 
 -   CTT: residual correlations added to model to improve fit
--   CTT: default estimator ML used (or estimator not reported), when WLS is appropriate (which it usually is for ordinal data)
+-   CTT: default estimator ML used (or estimator not reported), when WLSMV is appropriate (which it usually is for ordinal data) and using ML-based cutoff values (i.e Hu & Bentler, 1999) that are inappropriate for WLSMV
 -   CTT and IRT: lack of invariance analysis
 -   IRT: not reporting enough aspects/metrics (i.e only reporting item fit or model fit)
 
@@ -1762,7 +1704,9 @@ No psychometric/statistical method is "safe" from misuse. Some common mistakes t
 
 ## Bayesian IRT
 
-There are guides and tools available for doing Bayesian IRT in R as well. The `brms` package is highly recommended [@bürkner2017; @bürkner2021] and this excellent blog post: <https://solomonkurz.netlify.app/blog/2021-12-29-notes-on-the-bayesian-cumulative-probit/>
+There are guides and tools available for doing Bayesian IRT in R. The `brms` package is highly recommended [@bürkner2017; @bürkner2021] and this excellent blog post is very helpful to get started: <https://solomonkurz.netlify.app/blog/2021-12-29-notes-on-the-bayesian-cumulative-probit/>
+
+
 
 ## R packages used
 
