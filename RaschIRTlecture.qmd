@@ -1664,7 +1664,8 @@ Not many item thresholds in the location of the respondent, which means that the
 -   Most of it you are not expected to remember (few know these things)
 -   You will be expected to know basic terms and concepts
 -   You now know that these methods and tools exist and where to find them
-    -   A sample Rasch analysis with code and data: [RISEkbmRasch vignette](https://pgmj.github.io/raschrvignette/RaschRvign.html)
+    -   A sample Rasch analysis with code and data: [easyRasch vignette](https://pgmj.github.io/raschrvignette/RaschRvign.html)
+    
 
 ## Classical vs modern test theory {.smaller}
 
@@ -1686,7 +1687,7 @@ CTT = factor analysis, principal component analysis, etc; Modern test theory = I
 No psychometric/statistical method is "safe" from misuse. Some common mistakes to look for in papers:
 
 -   CTT: residual correlations added to model to improve fit
--   CTT: default estimator ML used (or estimator not reported), when WLSMV is appropriate (which it usually is for ordinal data) and using ML-based cutoff values (i.e Hu & Bentler, 1999) that are inappropriate for WLSMV
+-   CTT: default estimator ML used (or estimator not reported), when WLSMV is appropriate (which it usually is for ordinal data) and using ML-based cutoff values (i.e Hu & Bentler/Kline/Brown) that are inappropriate for WLSMV
 -   CTT and IRT: lack of invariance analysis
 -   IRT: not reporting enough aspects/metrics (i.e only reporting item fit or model fit)
 
@@ -1706,6 +1707,24 @@ No psychometric/statistical method is "safe" from misuse. Some common mistakes t
 
 There are guides and tools available for doing Bayesian IRT in R. The `brms` package is highly recommended [@bürkner2017; @bürkner2021] and this excellent blog post is very helpful to get started: <https://solomonkurz.netlify.app/blog/2021-12-29-notes-on-the-bayesian-cumulative-probit/>
 
+## Exercise {.smaller}
+
+Let's look at a paper using the 5 criteria and common fallacies.
+
+::: columns
+::: {.column width="50%"}
+```{r}
+data.frame(Criterion = psychometric_criteria[,1]) %>% 
+  kable()
+```
+
+:::
+
+::: {.column width="50%"}
+-   CTT: default estimator ML used (or estimator not reported), when WLSMV is appropriate (which it usually is for ordinal data) and using ML-based cutoff values (i.e Hu & Bentler/Kline/Brown) that are inappropriate for WLSMV
+-   CTT: residual correlations added to model to improve fit
+:::
+:::
 
 
 ## R packages used
